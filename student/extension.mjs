@@ -7,15 +7,15 @@ export function createStudentView() {
       root.className = 'student-identity';
 
       const DEVICE_LABELS = {
-        compliant: '보안 기준 충족',
-        noncompliant: '보안 기준 미충족',
-        unknown: '확인 불가',
+        compliant: '보안 기준 충족(compliant)',
+        noncompliant: '보안 기준 미충족(noncompliant)',
+        unknown: '확인 불가(unknown)',
       };
       const SESSION_LABELS = {
-        active: '활성',
-        expired: '만료',
-        revoked: '철회됨',
-        unknown: '확인 불가',
+        active: '활성(active)',
+        expired: '만료(expired)',
+        revoked: '철회됨(revoked)',
+        unknown: '확인 불가(unknown)',
       };
       const MODE_LABELS = {
         demo: '예제 자료',
@@ -56,9 +56,77 @@ export function createStudentView() {
         .map((r) => r && r.mode)
         .find((m) => m && Object.hasOwn(MODE_LABELS, m)) || meMode;
 
+      // devices/sessions 를 각자의 상태(loading/ok/error)에 따라 별도 블록으로 그린다.
+      // me 의 상태와 무관하게 항상 표시하여, me 가 ok 여도 목록 오류가 드러나게 한다.
+      const renderListSection = (title, resource, describe, emptyText) => {
+        const section = document.createElement('section');
+        section.className = 'student-identity-section';
+        const h = document.createElement('p');
+        h.textContent = title;
+        section.append(h);
+
+        const state = resource && resource.status;
+        const mode = resource && resource.mode;
+        if (!resource || state === 'loading') {
+          section.append(message(`${title}: 불러오는 중`, 'loading'));
+          appendMode(section, mode);
+          return section;
+        }
+        if (state === 'error') {
+          const detail = resource.error && resource.error.message ? resource.error.message : '서버에 연결하지 못했습니다.';
+          section.append(
+            message(`${title}: 연결 실패: ${detail}`, 'error'),
+            message(`${title}: 확인 불가`, 'error'),
+          );
+          appendMode(section, mode);
+          return section;
+        }
+        if (state === 'ok') {
+          const list = Array.isArray(resource.data) ? resource.data : [];
+          if (list.length === 0) {
+            section.append(message(`${title}: ${emptyText}`, 'empty'));
+          } else {
+            const ul = document.createElement('ul');
+            ul.className = 'student-identity-list';
+            for (const item of list) {
+              const li = document.createElement('li');
+              li.textContent = describe(item);
+              ul.append(li);
+            }
+            section.append(ul);
+          }
+          appendMode(section, mode);
+          return section;
+        }
+        section.append(message(`${title}: 확인 불가`, 'error'));
+        appendMode(section, mode);
+        return section;
+      };
+
       if (!me || meState === 'loading') {
         root.append(message('불러오는 중', 'loading'));
         appendMode(root, anyMode);
+        root.append(
+          renderListSection(
+            '기기',
+            devices,
+            (item) => {
+              const label = item.label || item.id || '확인 불가';
+              const status = Object.hasOwn(DEVICE_LABELS, item.status) ? DEVICE_LABELS[item.status] : '확인 불가(unknown)';
+              return `${label} · ${status}`;
+            },
+            '표시할 기기가 없습니다.',
+          ),
+          renderListSection(
+            '세션',
+            sessions,
+            (item) => {
+              const status = Object.hasOwn(SESSION_LABELS, item.status) ? SESSION_LABELS[item.status] : '확인 불가(unknown)';
+              return `${item.id || '확인 불가'} · ${status}`;
+            },
+            '표시할 세션이 없습니다.',
+          ),
+        );
         return root;
       }
 
@@ -69,6 +137,27 @@ export function createStudentView() {
           message('확인 불가: 현재 로그인 정보를 불러올 수 없습니다.', 'error'),
         );
         appendMode(root, anyMode);
+        root.append(
+          renderListSection(
+            '기기',
+            devices,
+            (item) => {
+              const label = item.label || item.id || '확인 불가';
+              const status = Object.hasOwn(DEVICE_LABELS, item.status) ? DEVICE_LABELS[item.status] : '확인 불가(unknown)';
+              return `${label} · ${status}`;
+            },
+            '표시할 기기가 없습니다.',
+          ),
+          renderListSection(
+            '세션',
+            sessions,
+            (item) => {
+              const status = Object.hasOwn(SESSION_LABELS, item.status) ? SESSION_LABELS[item.status] : '확인 불가(unknown)';
+              return `${item.id || '확인 불가'} · ${status}`;
+            },
+            '표시할 세션이 없습니다.',
+          ),
+        );
         return root;
       }
 
@@ -79,8 +168,8 @@ export function createStudentView() {
         const session = data.session || {};
         const userLabel = user.label || user.id || '확인 불가';
         const deviceLabel = device.label || device.id || '확인 불가';
-        const deviceStatus = Object.hasOwn(DEVICE_LABELS, device.status) ? DEVICE_LABELS[device.status] : '확인 불가';
-        const sessionStatus = Object.hasOwn(SESSION_LABELS, session.status) ? SESSION_LABELS[session.status] : '확인 불가';
+        const deviceStatus = Object.hasOwn(DEVICE_LABELS, device.status) ? DEVICE_LABELS[device.status] : '확인 불가(unknown)';
+        const sessionStatus = Object.hasOwn(SESSION_LABELS, session.status) ? SESSION_LABELS[session.status] : '확인 불가(unknown)';
 
         root.append(
           row('사용자', userLabel),
@@ -88,39 +177,27 @@ export function createStudentView() {
           row('세션', `${session.id || '확인 불가'} · ${sessionStatus}`),
         );
 
-        // devices/sessions 목록이 있으면 항상 별도로 표시한다(1건이어도). 새 배열이 오면 목록 전체를 교체한다.
-        const deviceList = devices && devices.status === 'ok' && Array.isArray(devices.data) ? devices.data : null;
-        if (deviceList) {
-          const heading = document.createElement('p');
-          heading.textContent = '기기 목록';
-          root.append(heading);
-          const list = document.createElement('ul');
-          list.className = 'student-identity-devices';
-          for (const item of deviceList) {
-            const li = document.createElement('li');
-            const label = item.label || item.id || '확인 불가';
-            const status = Object.hasOwn(DEVICE_LABELS, item.status) ? DEVICE_LABELS[item.status] : '확인 불가';
-            li.textContent = `${label} · ${status}`;
-            list.append(li);
-          }
-          root.append(list);
-        }
-
-        const sessionList = sessions && sessions.status === 'ok' && Array.isArray(sessions.data) ? sessions.data : null;
-        if (sessionList) {
-          const heading = document.createElement('p');
-          heading.textContent = '세션 목록';
-          root.append(heading);
-          const list = document.createElement('ul');
-          list.className = 'student-identity-sessions';
-          for (const item of sessionList) {
-            const li = document.createElement('li');
-            const status = Object.hasOwn(SESSION_LABELS, item.status) ? SESSION_LABELS[item.status] : '확인 불가';
-            li.textContent = `${item.id || '확인 불가'} · ${status}`;
-            list.append(li);
-          }
-          root.append(list);
-        }
+        root.append(
+          renderListSection(
+            '기기 목록',
+            devices,
+            (item) => {
+              const label = item.label || item.id || '확인 불가';
+              const status = Object.hasOwn(DEVICE_LABELS, item.status) ? DEVICE_LABELS[item.status] : '확인 불가(unknown)';
+              return `${label} · ${status}`;
+            },
+            '표시할 기기가 없습니다.',
+          ),
+          renderListSection(
+            '세션 목록',
+            sessions,
+            (item) => {
+              const status = Object.hasOwn(SESSION_LABELS, item.status) ? SESSION_LABELS[item.status] : '확인 불가(unknown)';
+              return `${item.id || '확인 불가'} · ${status}`;
+            },
+            '표시할 세션이 없습니다.',
+          ),
+        );
 
         appendMode(root, anyMode);
         return root;
@@ -129,6 +206,27 @@ export function createStudentView() {
       // status 가 loading/ok/error 가 아닌 경우(예: idle)도 확인 불가로 남긴다.
       root.append(message('확인 불가', 'error'));
       appendMode(root, anyMode);
+      root.append(
+        renderListSection(
+          '기기',
+          devices,
+          (item) => {
+            const label = item.label || item.id || '확인 불가';
+            const status = Object.hasOwn(DEVICE_LABELS, item.status) ? DEVICE_LABELS[item.status] : '확인 불가(unknown)';
+            return `${label} · ${status}`;
+          },
+          '표시할 기기가 없습니다.',
+        ),
+        renderListSection(
+          '세션',
+          sessions,
+          (item) => {
+            const status = Object.hasOwn(SESSION_LABELS, item.status) ? SESSION_LABELS[item.status] : '확인 불가(unknown)';
+            return `${item.id || '확인 불가'} · ${status}`;
+          },
+          '표시할 세션이 없습니다.',
+        ),
+      );
       return root;
     },
     renderDecision() { return '학생 구현 대기: 서버의 판정과 이유를 연결하세요.'; },
