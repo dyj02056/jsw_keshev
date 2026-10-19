@@ -51,17 +51,24 @@ export function createStudentView() {
 
       const meState = me && me.status;
       const meMode = me && me.mode;
+      // devices/sessions 도 같은 세대의 응답이므로, me 가 loading/error 여도 mode 안내를 위해 참고한다.
+      const anyMode = [me, devices, sessions]
+        .map((r) => r && r.mode)
+        .find((m) => m && Object.hasOwn(MODE_LABELS, m)) || meMode;
 
       if (!me || meState === 'loading') {
         root.append(message('불러오는 중', 'loading'));
-        appendMode(root, meMode);
+        appendMode(root, anyMode);
         return root;
       }
 
       if (meState === 'error') {
         const detail = me.error && me.error.message ? me.error.message : '서버에 연결하지 못했습니다.';
-        root.append(message(`연결 실패: ${detail}`, 'error'));
-        appendMode(root, meMode);
+        root.append(
+          message(`연결 실패: ${detail}`, 'error'),
+          message('확인 불가: 현재 로그인 정보를 불러올 수 없습니다.', 'error'),
+        );
+        appendMode(root, anyMode);
         return root;
       }
 
@@ -81,8 +88,12 @@ export function createStudentView() {
           row('세션', `${session.id || '확인 불가'} · ${sessionStatus}`),
         );
 
+        // devices/sessions 목록이 있으면 항상 별도로 표시한다(1건이어도). 새 배열이 오면 목록 전체를 교체한다.
         const deviceList = devices && devices.status === 'ok' && Array.isArray(devices.data) ? devices.data : null;
-        if (deviceList && deviceList.length > 1) {
+        if (deviceList) {
+          const heading = document.createElement('p');
+          heading.textContent = '기기 목록';
+          root.append(heading);
           const list = document.createElement('ul');
           list.className = 'student-identity-devices';
           for (const item of deviceList) {
@@ -96,7 +107,10 @@ export function createStudentView() {
         }
 
         const sessionList = sessions && sessions.status === 'ok' && Array.isArray(sessions.data) ? sessions.data : null;
-        if (sessionList && sessionList.length > 1) {
+        if (sessionList) {
+          const heading = document.createElement('p');
+          heading.textContent = '세션 목록';
+          root.append(heading);
           const list = document.createElement('ul');
           list.className = 'student-identity-sessions';
           for (const item of sessionList) {
@@ -108,13 +122,13 @@ export function createStudentView() {
           root.append(list);
         }
 
-        appendMode(root, meMode);
+        appendMode(root, anyMode);
         return root;
       }
 
       // status 가 loading/ok/error 가 아닌 경우(예: idle)도 확인 불가로 남긴다.
       root.append(message('확인 불가', 'error'));
-      appendMode(root, meMode);
+      appendMode(root, anyMode);
       return root;
     },
     renderDecision() { return '학생 구현 대기: 서버의 판정과 이유를 연결하세요.'; },
