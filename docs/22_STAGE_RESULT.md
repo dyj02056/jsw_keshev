@@ -1,0 +1,123 @@
+# 13~21단계 실행 결과 표 (22단계 기준)
+
+이 문서는 `docs/22_REPRODUCTION.md`의 재현 기록과 함께 읽는 **단계별 결과 표**입니다. 22단계 요구사항(누적 원문 일관성·이동 가능한 구성·재현 기록·시연/학생 진술 구분·버전/지원 범위)에 따라, 13~21단계 각 항목을 "모의 데이터(demo) 성공"과 "실제 연결 성공"으로 구분해 적습니다.
+
+- 기준 커밋: `081e0ce25d19084063f56609da93c68cf7bfb05f` (branch `main`)
+- 기준 버전: `alekov-client-starter@0.2.11` (package.json), Node.js `24.19.0`
+- 진술 주체: 학생(이 문서 작성자). AI 원문 검토는 실행 성공 증명이 아닙니다.
+- 표시 규칙:
+  - `demo` = 예제 데이터(demo) 응답. 실제 연결 성공 아님.
+  - `실연결` = 실제 SDP 엔진/AI 게이트 연결. 기본 실행에서는 나오지 않음.
+  - `미확인` = 이번 재현에서 직접 확인하지 못한 항목.
+  - `해당없음` = 이 단계 범위가 아님.
+
+## 13단계 · 세 메뉴와 로그인·기기 상태
+
+| 항목 | 결과 | 확인 시각 | 근거(파일·문구) | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| 세 메뉴(보호 현황·업무 앱·보안 기록) 렌더 | 미확인 | — | `public/index.html` `#nav [role=tab]` 3개, `public/app.js` `setupNav()` | 해당없음(제공 UI) | 새 폴더 실행 검증 미실시 |
+| 학생 `renderIdentity` 표시 | 미확인 | — | `student/extension.mjs` `renderIdentity` | 제공 meta.mode 값 따름 | 실행 검증 미실시 |
+| 실패/확인 불가 구분 | 미확인 | — | `renderIdentity` 내 `student-state-error` 분기 | — | 실행 검증 미실시 |
+| 다시 불러오기 후 상태 유지 | 미확인 | — | `loadAll()` `#refresh` 클릭 | — | 실행 검증 미실시 |
+| demo 표시 구분 | 미확인 | — | `MODE_LABELS.demo = '예제 데이터(demo) · 실제 연결 아님'` | demo 구분됨 | npm run demo 미실시 |
+
+## 14단계 · 업무 앱 접속 판정·상태
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| 앱 목록 표시(`/api/apps`) | 미확인 | — | `renderApps()` | — | 실행 미실시 |
+| 판정 4종(allow/deny/challenge/unknown) 구분 | 미확인 | — | `DECISIONS` 상수, `renderDecision` | — | 실행 미실시 |
+| 판정 이유 표시 | 미확인 | — | `renderDecision` `판정 이유` 행 | — | 실행 미실시 |
+| unknown을 allow로 표시 안 함 | 미확인 | — | `renderDecision` `unknown` 분기 | — | 실행 미실시 |
+| 요청 실패를 판정 실패로 표시 | 미확인 | — | `state.access.status === 'error'` 분기 | — | 실행 미실시 |
+| demo 판정 구분 | 미확인 | — | `MODE_LABELS.demo` | demo 구분됨 | demo 미실시 |
+
+## 15단계 · 접속 기록과 기존 XDR 사건
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| 기록 목록(최근 40건 상한) 표시 | 미확인 | — | `COVERAGE_RULES.events.limit = 40` | — | 실행 미실시 |
+| 종류(access/xdr) 구분 | 미확인 | — | `KIND_LABELS` | — | 실행 미실시 |
+| 시각 표시 | 미확인 | — | `formatAt()` | — | 실행 미실시 |
+| 필터(종류·앱·접속 상태) | 미확인 | — | `buildSelect` 3개 | — | 실행 미실시 |
+| 상세 열기/닫기 | 미확인 | — | `renderDetail` | — | 실행 미실시 |
+| 다시 불러오기 시 이전 결과 대체 | 미확인 | — | `renderEvents` `setChildren` | — | 실행 미실시 |
+| 빈 목록과 오류 구분 | 미확인 | — | `data.length===0` vs `status==='error'` | — | 실행 미실시 |
+
+## 16단계 · 알림·기기·세션·설정·오류·빈 화면
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| 기기·세션 다시 불러오기 | 미확인 | — | `renderListSection`·`#refresh` | — | 실행 미실시 |
+| 알림 표시 | 미확인 | — | `studentData('status')` `notifications` | — | 실행 미실시 |
+| 로딩·빈·오류 구분 | 미확인 | — | `student-state-loading/empty/error` 클래스 | — | 실행 미실시 |
+| 재시도(자동 아님, 버튼) | 미확인 | — | `public/app.js` "자동 재시도 없음" 주석, `#refresh` | — | 실행 미실시 |
+| 도움정보 마스킹 | 미확인 | — | `#diag-copy`, `helpInfo()`는 연결 ID·경로 제외 | — | 실행 미실시 |
+| 미지원 조치 안내 | 미확인 | — | `renderAction` "supportedActions가 없어 정상" 분기 | — | 실행 미실시 |
+
+## 17단계 · AI 연결
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| 연결 상태 표시(test/verified) | 미확인 | — | `renderAiConnection` `audience === 'test'/'verified'` | 실제 게이트 없으면 `test` | 운영자 계정·앱 권한 준비 전 |
+| 모델 점검 결과(modelCount) | 미확인 | — | `validAiCheck` `modelCount` 표시 | — | AI 게이트 미연결 |
+| 인증 오류 구분 | 미확인 | — | `AI_MESSAGES` `WB_CLCO_AUTH_REQUIRED` 등 | — | AI 게이트 미연결 |
+| 이용 한도·시간 오류 구분 | 미확인 | — | `AI_MESSAGES` `WB_CLCO_*` | — | AI 게이트 미연결 |
+| 수동 재시도(버튼) | 미확인 | — | `#ai-check` | — | 실행 미실시 |
+| 연결 세대 초기화 | 미확인 | — | `cancelAiCheck({reset:true})` | — | 실행 미실시 |
+| 비밀값 미표시 | 미확인 | — | `safeAiFailure`, `helpInfo` | — | 실행 미실시 |
+| 시간 초과·취소 | 미확인 | — | `aiRequest` `REQUEST_TIMEOUT_MS=10000` | — | 실행 미실시 |
+
+## 18단계 · 근거가 있는 AI 사건 설명
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| evidenceId 바인딩 | 미확인 | — | `renderExplanation` `evidenceById` 매핑 | — | 실행 미실시 |
+| 근거 없는 인용 거부 | 미확인 | — | `missingRefs.length > 0` → 실패 표시 | — | 실행 미실시 |
+| unknown 상태 표시 | 미확인 | — | `unknownEntries` | — | 실행 미실시 |
+| 불충분 근거 거부 | 미확인 | — | `validExplanation` `refs(x.evidenceIds)` | — | 실행 미실시 |
+| 다른 사건 인용 거부 | 미확인 | — | `validExplanation` `evidenceIds.has(ref)` | — | 실행 미실시 |
+| 조치 제안 미실행 표시 | 미확인 | — | `requiresHumanConfirmation===true`, `executed===false` 검증 | — | 실행 미실시 |
+| 기존 접속·기록 유지 | 미확인 | — | `cancelExplanation` 비파괴 | — | 실행 미실시 |
+| 다시 요청 | 미확인 | — | `#ai-explanation-cancel` | — | 실행 미실시 |
+
+## 19단계 · AI 조치 제안과 서버 처리 결과
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| 조치 제안과 실행 분리 | 미확인 | — | `renderAction` `prepared · 미실행` | — | 실행 미실시 |
+| 사람 확인 버튼 | 미확인 | — | `#action-confirm` | — | 실행 미실시 |
+| confirmation 기한 | 미확인 | — | `confirmationExpiresAt` 타이머 | — | 실행 미실시 |
+| ACK ≠ 완료 | 미확인 | — | `pending` 라벨 "ACK는 완료가 아님" | — | 실행 미실시 |
+| 관측된 효과만 성공 표시 | 미확인 | — | `observation.effectApplied===true` | — | 실행 미실시 |
+| 중복 방지 | 미확인 | — | `actionGeneration` 세대 증가 | — | 실행 미실시 |
+| unknown을 성공으로 보지 않음 | 미확인 | — | `unknown` 라벨 | — | 실행 미실시 |
+| 다시 조회 시 이전 결과 제거 | 미확인 | — | `clearAction` | — | 실행 미실시 |
+
+## 20단계 · 사용 라이브러리와 취약점 정보
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| lock 기반 정확한 버전 | 미확인 | — | `normalizeScan` 입력 계약 | — | `.env.example` `ON_APPROVED_PUBLIC_PACKAGES=[]` |
+| OSV 대조 결과 | 미확인 | — | `student-vulnerabilities-table` | — | 승인 패키지 비어 있음 |
+| 미설정·미조회·조회불가 구분 | 미확인 | — | `SCAN_LABELS` 5종 | — | 실행 미실시 |
+| none_found와 unverifiable 구분 | 미확인 | — | `PKG_STATUS_LABELS` | — | 실행 미실시 |
+| 부분 결과 유지 | 미확인 | — | `scanStatus='partial'` 분기 | — | 실행 미실시 |
+| 다시 조회 시 결과 교체 | 미확인 | — | `loadVulnerabilities` `vulnerabilitiesGeneration` | — | 실행 미실시 |
+| 실패 시 이전 결과를 성공으로 표시 안 함 | 미확인 | — | `status==='error'` 분기 | — | 실행 미실시 |
+
+## 21단계 · 설명서와 구성도
+
+| 항목 | 결과 | 확인 시각 | 근거 | 모의/실제 구분 | 미확인 원인 |
+|---|---|---|---|---|---|
+| 설치·실행·종료·재실행 안내 | 문서 작성됨 | — | `docs/STUDENT_RUNBOOK.md` 4장 | 문서 성격 | 실제 실행으로 재현한 결과는 `docs/22_REPRODUCTION.md`에서 미확인 |
+| 구성도(텍스트+Mermaid) | 문서 작성됨 | — | `docs/STUDENT_RUNBOOK.md` 5장 | 문서 성격 | 그림 렌더 검증 미실시 |
+| 제공/학생 구현 경계 | 문서 작성됨 | — | `docs/STUDENT_RUNBOOK.md` 6장 | 문서 성격 | 코드 대조 확인은 위 표에서 개별 항목으로 |
+| 오류 해결 안내 | 문서 작성됨 | — | `docs/STUDENT_RUNBOOK.md` 7장, `docs/CONNECTION_TROUBLESHOOT.md` | 문서 성격 | 실제 오류 재현 미실시 |
+
+## 이 표를 읽는 방법
+
+- "미확인"은 "실패"가 아닙니다. 이번 22단계 재현에서 **직접 실행해 확인하지 못한** 항목이며, `docs/22_REPRODUCTION.md`의 미확인 사항과 짝을 이룹니다.
+- `demo` 결과는 "예제 데이터"이며 실제 연결 성공이 아닙니다.
+- 제공 공통 UI와 학생 구현은 화면에서 분리되어 있습니다(`public/index.html` 카드 태그 `제공`/`student/extension.mjs`). 이 표의 결과는 **학생 진술**이며 서버의 실행 검증이 아닙니다.
+- 19단계 실집행(실제 원천 조치 연결)은 현재 미준비 상태로, `docs/FINAL_PRODUCT_GUIDE.md` 5·9장과 일치합니다.
