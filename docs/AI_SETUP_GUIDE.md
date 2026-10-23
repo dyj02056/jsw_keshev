@@ -39,7 +39,8 @@
 - 학생 프로젝트 절대 경로를 확인합니다. 기존 파일을 덮어쓰거나 지우거나 초기화하지 않습니다.
 - 실행은 [STUDENT_LAUNCH_GUIDE.md](STUDENT_LAUNCH_GUIDE.md)의 실행 도구를 사용합니다. 학생 AI 연결을 위해 `.env`에 주소·열쇠·모델 값을 입력하지 않습니다.
 - `npm start`는 `127.0.0.1:5189`이며 기본은 미연결입니다. `npm run demo`는 예제일 뿐 실제 연결이 아닙니다.
-- 시작 틀 `package.json`의 스크립트는 `start`·`demo`·`test` 세 가지입니다. `student/extension.mjs` 문법만 따로 보려면 `node --check student/extension.mjs`를 씁니다.
+- 현재 `package.json`(`alekov-client-starter@0.2.11`)의 스크립트는 `start`·`demo`·`check` 세 가지이며 `test` 스크립트는 없습니다. `student/extension.mjs` 문법 확인은 `npm run check`(= `node --check student/extension.mjs`)로 합니다.
+  - 적용 버전 주석: 이 줄은 처음 받은 시작 틀 안내에서 "`start`·`demo`·`test` 세 가지"로 적혀 있었으나 현재 `package.json`과 맞지 않아 22단계에서 정정했습니다. 스크립트 안내가 서로 다르면 현재 `package.json`과 `docs/STUDENT_RUNBOOK.md`를 우선합니다.
 
 ## 담당자가 native 호스트 설정을 안내한 경우
 
