@@ -8,24 +8,25 @@
 |---|---|---|
 | 저장소 URL | (본인 GitHub 저장소 주소. 원문 제출 시 사용) | 과제 화면에 입력. 이 문서에는 URL을 쓰지 않고 제출 시 직접 입력 |
 | 브랜치 | `main` | `git branch --show-current` 출력 |
-| 제출 커밋(40자리) | `4347c831f9d40bc399ca966d0c60f0a071df2afd` | `git rev-parse HEAD` 출력 |
-| 커밋 메시지 | `step-22` (또는 해당 커밋 메시지) | `git log -1` 출력 |
-| 커밋 작성자 | `dyj02056` | `git log -1` 출력 |
+| 수정본 최종 제출 커밋(40자리) | `<수정본을 커밋한 뒤 기록>` | `git rev-parse HEAD` 출력 |
+| 수정 시작점 커밋(40자리) | `dcff5eb29f2b209f221968e110c5f13bc76aa42c` | 수정 전 `git rev-parse HEAD` |
+| 커밋 메시지 | 최종 제출 시 기록 | `git log -1` 출력 |
+| 커밋 작성자 | 최종 제출 시 기록 | `git log -1` 출력 |
 | 커밋 시각 | (해당 커밋 시각) | `git log -1` 출력 |
 | 시작 틀 버전 | `alekov-client-starter@0.2.11` | `package.json` |
 | Node.js 기준 버전 | `24.19.0` | `package.json` `engines.node` |
-| 제출 대상 파일 수 | (커밋 시점 파일 수) | `git ls-tree -r --name-only 4347c831f9d4…` 출력 |
+| 제출 대상 파일 수 | 미확인 | 최종 제출 커밋에서 `git ls-tree -r --name-only <제출 커밋>` 실행 |
 | 작업 폴더(원본) | `C:/Users/User/Documents/sktassign/on-client` | 사용자 확인 |
-| 작업 폴더 미커밋 변경 | 없음 | `git status --short` 빈 출력 |
+| 작업 폴더 미커밋 변경 | 수정 중(최종 제출 전 커밋 필요) | `git status --short` |
 | 이전 커밋(역사 기록) | `e1545e18eedd4415a155abfd061c0acfceb7dc45` (이전 재현 기록) | 아래 7장 |
 
-**주의:** 이 문서의 재현 절차·관찰 항목은 위 **제출 커밋 `4347c831f9d4…`** 를 대상으로 합니다. `e1545e18eedd…`는 이전 재현 기록이며, 이 문서 7장에 역사 자료로만 남깁니다.
+**주의:** 아래 절차는 최종 수정 커밋을 대상으로 합니다. 수정본을 커밋한 뒤 표의 40자리 해시와 checkout 자리표시자를 그 커밋으로 갱신해야 합니다. 실행하지 않은 재현 관찰은 미확인으로 둡니다. `e1545e18eedd…`는 역사 자료입니다.
 
 ## 1. 새 환경 준비
 
 | 확인 항목 | 상태 | 비고 |
 |---|---|---|
-| 원본 작업 폴더 보존 | 확인됨 | `git status --short` 빈 출력. 원본 폴더는 그대로 유지 |
+| 원본 작업 폴더 보존 | 확인됨 | 작업 폴더는 유지하며 최종 상태는 커밋 후 직접 확인 |
 | 새 빈 폴더 생성 | 미확인 | 이번 기록에서는 직접 실행하지 않았음 |
 | 새 폴더에 제출 커밋 받기(clone·checkout) | 미확인 | 절차는 아래 2장. 실행 결과는 사용자 확인 후 3장에 채움 |
 | 런타임(Node.js 24.19.0) 확인 | 미확인 | `node --version` 실제 실행 필요 |
@@ -41,15 +42,15 @@
         git clone <본인 저장소 URL> on-client
         cd on-client
         git fetch --all
-        git checkout 4347c831f9d40bc399ca966d0c60f0a071df2afd
+        git checkout <최종 제출 커밋 40자리>
         git rev-parse HEAD
 
-   기대 결과: `git rev-parse HEAD` = `4347c831f9d40bc399ca966d0c60f0a071df2afd`
+   기대 결과: `git rev-parse HEAD` = 위 표의 최종 제출 커밋 40자리
 3. 로컬 원본 폴더에서 받으려면:
 
         git clone "C:\Users\User\Documents\sktassign\on-client" C:\Users\User\Documents\repro22\on-client
         cd C:\Users\User\Documents\repro22\on-client
-        git checkout 4347c831f9d40bc399ca966d0c60f0a071df2afd
+        git checkout <최종 제출 커밋 40자리>
         git rev-parse HEAD
 
 4. 런타임 확인: `node --version` → `v24.19.0` 기대
@@ -60,7 +61,7 @@
 
 주의: 기존 폴더의 인증·설정 파일(`.env`, 개인 설정 JSON, 인증서)은 새 폴더에 **복사하지 않습니다**. 필요하면 담당자가 안내한 경로를 `-NativeHostConfig`/`-SdpHostConfig`로 새로 지정합니다.
 
-## 3. 관찰 결과 (제출 커밋 `4347c831f9d4…` 대상, 사용자가 직접 채움)
+## 3. 관찰 결과 (최종 제출 커밋 대상, 사용자가 직접 채움)
 
 아래 표의 값은 사용자가 실제 화면/콘솔에서 확인한 결과로 채웁니다. 지금은 **미확인**입니다.
 
@@ -102,7 +103,7 @@
 
 ## 6. 결과 요약
 
-- 원본 작업 폴더는 제출 커밋 `4347c831f9d40bc399ca966d0c60f0a071df2afd` 상태이며, 미커밋 변경이 없습니다.
+- 원본 작업 폴더는 기준 커밋 `dcff5eb29f2b209f221968e110c5f13bc76aa42c`에서 수정 중입니다. 최종 제출 커밋과 작업 트리 상태는 학생이 커밋 후 기록합니다.
 - 새 폴더에서의 실제 실행·화면 확인은 이 문서 작성 시점 기준 **미확인**입니다. `docs/22_STAGE_RESULT.md`의 항목도 동일하게 미확인/미구현으로 남겨 두었습니다.
 - 16단계 학생 상태·알림 표시(`renderStatus`)는 코드 상 구현되어 `{devices, sessions, notifications, diagnostics, mode}`를 받아 DOM을 반환합니다. `docs/22_STAGE_RESULT.md`와 `docs/VERSION_SUPPORT.md`에 명시했습니다.
 - 22단계 통과 판정은 서버 AI의 **원문 검토 기준 수료**이며, 실제 운영 인증이나 v1.0 자동 인증이 아닙니다. 서로 다른 커밋의 결과를 합쳐 최종 성공으로 표시하지 않습니다.
@@ -112,5 +113,5 @@
 아래는 이전 단계 커밋 `e1545e18eedd4415a155abfd061c0acfceb7dc45`(이전 재현 기록) 시점의 이력입니다. 이번 제출 커밋의 재현 결과가 아니며, 기록으로만 보존합니다.
 
 - 이전 재현 기록은 `renderStatus` 미구현 상태를 전제로 작성되었습니다.
-- 현재 제출 커밋에서는 `renderStatus`가 구현되어 전달 구조(`{devices, sessions, notifications, diagnostics, mode}`)를 직접 읽습니다.
+- 현재 수정본에서는 `renderStatus`가 구현되어 전달 구조(`{devices, sessions, notifications, diagnostics, mode}`)를 직접 읽습니다.
 - 이전 커밋 시점의 기록은 이 문서의 0장·2장에 남아 있던 이전 내용을 이 7장으로 옮겨 보존합니다.

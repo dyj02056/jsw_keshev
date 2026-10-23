@@ -1,4 +1,4 @@
-# 데이터 보존·백업·복원 계획 (케셰브 on-client, 제출 커밋 e1545e18eedd…)
+# 데이터 보존·백업·복원 계획 (케셰브 on-client, 수정 기준 커밋 dcff5eb29f2b…)
 
 이 문서는 22단계 "데이터 보존 계획" 요구사항에 따라, 이 프로젝트의 데이터 보존·백업·복원 절차와 **제한**을 적습니다. 제공 서버·판정 코드·인증 설정은 수정하지 않습니다.
 
@@ -33,9 +33,9 @@
 1. 변경을 작업 폴더에서 커밋합니다. 커밋 메시지는 단계 식별(예: `step-21`, `step-22`)을 포함합니다.
 2. 원격(GitHub 비공개 저장소)에 push합니다. 비공개 저장소는 공개로 바꾸지 않습니다.
 3. 필요한 경우 로컬 백업:
-   git bundle create ..\backup-on-client-e1545e1.bundle --all
+   git bundle create ..\backup-on-client-current.bundle --all
 4. 백업 파일은 프로젝트 폴더 **밖**에 두고, 비밀값·인증서가 포함되지 않았는지 다시 확인합니다.
-5. 백업 파일 옆에 아래를 적어 보관합니다: 커밋 해시(`git rev-parse HEAD` = `e1545e18eedd4415a155abfd061c0acfceb7dc45`), 백업 시각, 백업 만든 사람.
+5. 수정본을 커밋한 뒤 `git rev-parse HEAD` 값을 백업 파일 옆에 적습니다. 현재 문서의 기준 커밋 `dcff5eb29f2b209f221968e110c5f13bc76aa42c`는 수정 전 커밋이므로 최종 복원 대상으로 사용하지 않습니다.
 
 ### 3.2 옵션 조치 저장소(SQLite, 담당자가 사용하는 경우만)
 
@@ -53,12 +53,12 @@
 2. 원격 저장소에서:
    git clone <저장소 URL> on-client
    cd on-client
-   git checkout e1545e18eedd4415a155abfd061c0acfceb7dc45
+   git checkout <수정본 최종 제출 커밋 40자리>
    또는 번들에서:
-   git clone ..\backup-on-client-e1545e1.bundle on-client
+   git clone ..\backup-on-client-current.bundle on-client
    cd on-client
-   git checkout e1545e18eedd4415a155abfd061c0acfceb7dc45
-3. `git rev-parse HEAD`가 `e1545e18eedd4415a155abfd061c0acfceb7dc45`와 같은지 확인합니다.
+   git checkout <수정본 최종 제출 커밋 40자리>
+3. `git rev-parse HEAD`가 위에서 선택한 수정본 최종 제출 커밋과 같은지 확인합니다. 실제 커밋 후 이 문서의 자리표시자를 해당 40자리 값으로 바꿉니다.
 4. 런타임·실행 절차는 `docs/STUDENT_RUNBOOK.md` 4장을 따릅니다.
 5. 원본 작업 폴더는 지우거나 덮어쓰지 않습니다.
 
@@ -85,7 +85,7 @@
 | 항목 | 상태 |
 |---|---|
 | 원본 작업 폴더 보존 | 확인됨(`git status --short` 빈 출력) |
-| 코드·문서 복원 대상 = 제출 커밋 `e1545e18eedd…` | 문서에 반영 |
+| 코드·문서 복원 대상 = 수정본 최종 제출 커밋 | 커밋 후 해시 기록 필요 |
 | 기본 실행 DB 없음 명시 | 반영 |
 | 옵션 SQLite 영속 기록 보존·백업·복구 제한 | 반영 |
 | 백업 생성·검증 | 미확인 |

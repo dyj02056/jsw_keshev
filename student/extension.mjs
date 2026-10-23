@@ -575,6 +575,22 @@ export function createStudentView() {
         addState('기기 상태(state.device)', deviceLabel(state.device));
         section('상태(state)', stateDl);
 
+        const supported = Array.isArray(event.supportedActions) ? event.supportedActions : [];
+        if (supported.length > 0) {
+          const actions = document.createElement('ul');
+          for (const action of supported) {
+            if (typeof action !== 'string' || !action) continue;
+            const li = document.createElement('li');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.disabled = true;
+            button.textContent = `${action} 미지원`;
+            li.append(button, document.createTextNode(' 조치 실행 연결은 준비 중입니다. 요청은 전송되지 않습니다.'));
+            actions.append(li);
+          }
+          if (actions.childElementCount > 0) section('지원되지 않는 조치', actions);
+        }
+
         const close = document.createElement('button');
         close.type = 'button';
         close.className = 'student-events-detail-close';
@@ -746,7 +762,7 @@ export function createStudentView() {
         }
       } else if (devices && devices.status === 'error') {
         hasAttention = true;
-        root.append(message('기기 상태를 불러오지 못했습니다. 확인이 필요합니다.', 'error'));
+        root.append(message(`기기 상태를 불러오지 못했습니다${devices.error && devices.error.message ? `: ${devices.error.message}` : ''}. 위쪽 「다시 불러오기」를 직접 눌러 다시 시도하세요. 자동 재시도는 하지 않습니다.`, 'error'));
       } else {
         root.append(message('기기 정보를 불러오는 중입니다.', 'loading'));
       }
@@ -774,7 +790,7 @@ export function createStudentView() {
         }
       } else if (sessions && sessions.status === 'error') {
         hasAttention = true;
-        root.append(message('세션 상태를 불러오지 못했습니다. 확인이 필요합니다.', 'error'));
+        root.append(message(`세션 상태를 불러오지 못했습니다${sessions.error && sessions.error.message ? `: ${sessions.error.message}` : ''}. 위쪽 「다시 불러오기」를 직접 눌러 다시 시도하세요. 자동 재시도는 하지 않습니다.`, 'error'));
       } else {
         root.append(message('세션 정보를 불러오는 중입니다.', 'loading'));
       }
@@ -787,8 +803,9 @@ export function createStudentView() {
         for (const n of notifications) {
           const li = document.createElement('li');
           const res = n && n.resource ? n.resource : '알 수 없음';
+          const code = n && n.code ? n.code : '코드 없음';
           const msg = n && n.message ? n.message : '내용 없음';
-          li.textContent = `[${res}] ${msg}`;
+          li.textContent = `[${res}] ${code}: ${msg}`;
           ul.append(li);
         }
         root.append(message(`확인이 필요한 알림이 ${notifications.length}건 있습니다.`, 'error'), ul);
@@ -799,6 +816,34 @@ export function createStudentView() {
       // 도움정보 상태
       if (diagnostics && diagnostics.status === 'ok') {
         root.append(message('도움정보 확인 완료.', 'ok'));
+        const data = diagnostics.data && typeof diagnostics.data === 'object' ? diagnostics.data : {};
+        const engine = data.engine && typeof data.engine === 'object' ? data.engine : {};
+        const safe = {
+          requestId: data.requestId,
+          component: data.component,
+          version: data.version,
+          checkedAt: data.checkedAt,
+          engine: { mode: engine.mode, code: engine.code },
+        };
+        const details = document.createElement('dl');
+        details.className = 'student-status-diagnostics';
+        for (const [label, value] of Object.entries({
+          requestId: safe.requestId, component: safe.component, version: safe.version,
+          checkedAt: safe.checkedAt, 'engine.mode': safe.engine.mode, 'engine.code': safe.engine.code,
+        })) {
+          if (value == null || typeof value === 'object') continue;
+          const dt = document.createElement('dt'); dt.textContent = label;
+          const dd = document.createElement('dd'); dd.textContent = String(value);
+          details.append(dt, dd);
+        }
+        root.append(details, message('도움정보는 지원 요청에 붙여 넣도록 복사할 수 있습니다. 비밀값은 포함하지 않습니다.', 'idle'));
+        const copy = document.createElement('button');
+        copy.type = 'button'; copy.textContent = '도움정보 복사';
+        copy.addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(JSON.stringify(safe, null, 2)); copy.setAttribute('aria-label', '도움정보 복사 완료'); }
+          catch { copy.setAttribute('aria-label', '도움정보 복사 실패'); }
+        });
+        root.append(copy);
       } else if (diagnostics && diagnostics.status === 'error') {
         hasAttention = true;
         root.append(message('도움정보를 불러오지 못했습니다. 연결 상태 확인이 필요합니다.', 'error'));
