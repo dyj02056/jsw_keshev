@@ -1,6 +1,6 @@
 # 22단계 재현 기록 (새 환경 실행)
 
-이 문서는 **같은 최종 커밋을 새 빈 폴더에서 실행한 결과**를 학생이 직접 남기는 재현 기록입니다. 서버 AI 원문 검토와 별개로, 이 기록은 학생 진술이며 서버가 새 환경에서 실행했다는 뜻이 아닙니다. 항목은 `docs/FINAL_PRODUCT_GUIDE.md` 8장과 `docs/CURRICULUM.json` 22단계 checks(clean_environment / cumulative_behavior / data_preservation / release_reproduction)에 대응합니다.
+이 문서는 제출 커밋을 새 폴더에서 재현한 기록입니다. 이번 기록의 clone·checkout·백업은 Codex가 작업 환경에서 수행했습니다. 서버 AI 원문 검토와 별개이며, 브라우저 화면은 실행 환경의 localhost 접근 제한으로 확인하지 못했습니다. 항목은 `docs/FINAL_PRODUCT_GUIDE.md` 8장과 `docs/CURRICULUM.json` 22단계 checks(clean_environment / cumulative_behavior / data_preservation / release_reproduction)에 대응합니다.
 
 ## 0. 식별 정보 (현재 제출 커밋)
 
@@ -8,50 +8,42 @@
 |---|---|---|
 | 저장소 URL | (본인 GitHub 저장소 주소. 원문 제출 시 사용) | 과제 화면에 입력. 이 문서에는 URL을 쓰지 않고 제출 시 직접 입력 |
 | 브랜치 | `main` | `git branch --show-current` 출력 |
-| 수정본 최종 제출 커밋(40자리) | `<수정본을 커밋한 뒤 기록>` | `git rev-parse HEAD` 출력 |
+| 수정본 최종 제출 커밋(40자리) | `005f53932823d9fa11e7415b96e4a7c9324fcc2d` | `git rev-parse HEAD` 출력 |
 | 수정 시작점 커밋(40자리) | `dcff5eb29f2b209f221968e110c5f13bc76aa42c` | 수정 전 `git rev-parse HEAD` |
-| 커밋 메시지 | 최종 제출 시 기록 | `git log -1` 출력 |
-| 커밋 작성자 | 최종 제출 시 기록 | `git log -1` 출력 |
-| 커밋 시각 | (해당 커밋 시각) | `git log -1` 출력 |
+| 커밋 메시지 | `step-22` | `git log -1` 출력 |
+| 커밋 작성자 | `dyj02056` | `git log -1` 출력 |
+| 커밋 시각 | `2026-10-23 16:01:12 +09:00` | `git log -1` 출력 |
 | 시작 틀 버전 | `alekov-client-starter@0.2.11` | `package.json` |
 | Node.js 기준 버전 | `24.19.0` | `package.json` `engines.node` |
-| 제출 대상 파일 수 | 미확인 | 최종 제출 커밋에서 `git ls-tree -r --name-only <제출 커밋>` 실행 |
+| 제출 대상 파일 수 | 63 | `git ls-tree -r --name-only 005f53932823d9fa11e7415b96e4a7c9324fcc2d` |
 | 작업 폴더(원본) | `C:/Users/User/Documents/sktassign/on-client` | 사용자 확인 |
-| 작업 폴더 미커밋 변경 | 수정 중(최종 제출 전 커밋 필요) | `git status --short` |
+| 작업 폴더 미커밋 변경 | 재현 전 없음; 현재 이 문서 갱신분만 변경 | 재현 전 `git status --short`; 현재 변경은 제출 후 기록 보완 |
 | 이전 커밋(역사 기록) | `e1545e18eedd4415a155abfd061c0acfceb7dc45` (이전 재현 기록) | 아래 7장 |
 
-**주의:** 아래 절차는 최종 수정 커밋을 대상으로 합니다. 수정본을 커밋한 뒤 표의 40자리 해시와 checkout 자리표시자를 그 커밋으로 갱신해야 합니다. 실행하지 않은 재현 관찰은 미확인으로 둡니다. `e1545e18eedd…`는 역사 자료입니다.
+**주의:** 이번 재현 대상은 제출 커밋 `005f53932823d9fa11e7415b96e4a7c9324fcc2d`입니다. 실행하지 않은 재현 관찰은 미확인으로 둡니다. `e1545e18eedd…`는 역사 자료입니다.
 
 ## 1. 새 환경 준비
 
 | 확인 항목 | 상태 | 비고 |
 |---|---|---|
-| 원본 작업 폴더 보존 | 확인됨 | 작업 폴더는 유지하며 최종 상태는 커밋 후 직접 확인 |
-| 새 빈 폴더 생성 | 미확인 | 이번 기록에서는 직접 실행하지 않았음 |
-| 새 폴더에 제출 커밋 받기(clone·checkout) | 미확인 | 절차는 아래 2장. 실행 결과는 사용자 확인 후 3장에 채움 |
-| 런타임(Node.js 24.19.0) 확인 | 미확인 | `node --version` 실제 실행 필요 |
+| 원본 작업 폴더 보존 | 확인됨 | 재현은 별도 폴더에서 수행; 원본은 보존 |
+| 새 빈 폴더 생성 및 번들 clone·checkout | 확인됨 | 작업 폴더 밖 `on-client-reproduction-005f53932823d9fa`; `git rev-parse HEAD`가 제출 해시와 일치 |
+| 런타임(Node.js) 확인 | `v24.21.0` 확인 | 기준 권장 `v24.19.0`과 다름. 실행 스크립트는 참고 경고 후 진행 |
 | 외부 npm 의존성 설치 | 불필요 | `package.json`에 dependencies 없음. `npm install` 필요 없음. `package-lock.json`은 구성 기록용 |
 
-## 2. 재현 절차 (사용자가 직접 수행, 제출 커밋 대상)
+## 2. 재현 절차 (제출 커밋 대상)
 
-아래 명령을 **본인 PC의 PowerShell**에서 실행합니다. 이 문서를 작성한 AI는 명령을 실행하지 않았습니다.
+아래 절차를 재현 폴더에서 수행했습니다. GitHub 저장소 URL은 제공되지 않아 로컬 생성 번들로 clone했습니다.
 
-1. 새 빈 폴더 준비(예: `C:\Users\<사용자>\Documents\repro22\on-client`)
-2. GitHub에 올라가 있으면:
+1. 새 빈 폴더를 준비합니다. 이번 재현은 작업 폴더 밖 `C:\Users\User\.codex\visualizations\2026\10\23\01a1678a-7a50-7471-8ff0-b046139059eb\on-client-reproduction-005f53932823d9fa`에서 수행했습니다.
+2. 생성한 번들로 clone하고 대상 커밋을 확인합니다:
 
-        git clone <본인 저장소 URL> on-client
+        git clone "C:\Users\User\.codex\visualizations\2026\10\23\01a1678a-7a50-7471-8ff0-b046139059eb\on-client-005f53932823d9fa.bundle" on-client
         cd on-client
-        git fetch --all
-        git checkout <최종 제출 커밋 40자리>
+        git checkout 005f53932823d9fa11e7415b96e4a7c9324fcc2d
         git rev-parse HEAD
 
-   기대 결과: `git rev-parse HEAD` = 위 표의 최종 제출 커밋 40자리
-3. 로컬 원본 폴더에서 받으려면:
-
-        git clone "C:\Users\User\Documents\sktassign\on-client" C:\Users\User\Documents\repro22\on-client
-        cd C:\Users\User\Documents\repro22\on-client
-        git checkout <최종 제출 커밋 40자리>
-        git rev-parse HEAD
+   확인 결과: `git rev-parse HEAD` = `005f53932823d9fa11e7415b96e4a7c9324fcc2d`
 
 4. 런타임 확인: `node --version` → `v24.19.0` 기대
 5. 실행: `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1`
@@ -61,24 +53,24 @@
 
 주의: 기존 폴더의 인증·설정 파일(`.env`, 개인 설정 JSON, 인증서)은 새 폴더에 **복사하지 않습니다**. 필요하면 담당자가 안내한 경로를 `-NativeHostConfig`/`-SdpHostConfig`로 새로 지정합니다.
 
-## 3. 관찰 결과 (최종 제출 커밋 대상, 사용자가 직접 채움)
+## 3. 관찰 결과 (이번 작업 환경에서 직접 확인한 항목)
 
-아래 표의 값은 사용자가 실제 화면/콘솔에서 확인한 결과로 채웁니다. 지금은 **미확인**입니다.
+아래에는 이 작업 환경에서 직접 수행해 확인한 값만 기록합니다. 실행하지 못했거나 관찰할 수 없었던 항목은 **미확인**입니다.
 
 | 확인 항목 | 결과 | 관찰 시각 | 근거(화면 문구·로그·스크린샷 경로) |
 |---|---|---|---|
-| `node --version` = v24.19.0 | 미확인 | — | — |
-| 실행 도구 2줄 안내 표시 | 미확인 | — | — |
-| 브라우저 mode-badge `disconnected` 또는 `demo` | 미확인 | — | — |
-| 보호 현황 탭 로드 | 미확인 | — | — |
-| 업무 앱 탭 판정 4종 구분 | 미확인 | — | — |
-| 보안 기록 탭 목록·필터·상세 | 미확인 | — | — |
+| `node --version` | 사용자 보고 정상(정확한 출력 미제공) | 2026-10-23, 사용자 메시지 | 학생이 직접 실행한 출력은 공유되지 않음 |
+| 실행 도구 시작 안내 및 앱 실행 | 사용자 보고 정상 | 2026-10-23, 사용자 메시지 | 학생 진술; 실행 로그 미제공 |
+| 브라우저 화면 및 mode-badge | 사용자 보고 정상(`disconnected` 또는 `demo`) | 2026-10-23, 사용자 메시지 | 학생 진술; 화면 캡처 미제공 |
+| 보호 현황 탭 로드 | 사용자 보고 정상 | 2026-10-23, 사용자 메시지 | 학생 진술; 화면 캡처 미제공 |
+| 업무 앱 탭 열기 | 사용자 보고 정상 | 2026-10-23, 사용자 메시지 | 판정 네 종류 각각의 데이터 확인은 미실시로 둠 |
+| 보안 기록 탭 열기 | 사용자 보고 정상 | 2026-10-23, 사용자 메시지 | 목록·필터·상세 각각의 검증 근거는 미제공 |
 | AI 연결 칸 미연결 안내 | 미확인 | — | — |
 | AI 연결 점검 결과(test/실패) | 미확인 | — | — |
 | AI 사건 설명 요청 | 미확인 | — | — |
 | 패키지 취약점 조회 | 미확인 | — | — |
-| 종료 후 재실행 시 상태 일관 | 미확인 | — | — |
-| 원본 폴더에 새 변경 없음 | 미확인 | — | `git status --short` |
+| 종료 후 재실행 시 상태 일관 | 사용자 보고 정상 | 2026-10-23, 사용자 메시지 | 학생 진술; 로그 미제공 |
+| 재현 과정에서 원본 앱 코드 변경 없음 | 확인됨 | 재현 전 확인 | 새 폴더에서 실행; 현재 작업 폴더에는 이 기록 갱신만 있음 |
 
 ## 4. 모의(demo)·실연결·미확인 구분
 
@@ -92,10 +84,9 @@
 
 | 미확인 항목 | 이유 | 다음에 확인할 사람 |
 |---|---|---|
-| 새 폴더 clone·checkout | 이번에 직접 실행하지 않음 | 학생 |
-| Node.js 24.19.0 실측 | 이번에 직접 실행하지 않음 | 학생 |
-| 실행 도구 성공 신호 | 이번에 직접 실행하지 않음 | 학생 |
-| 세 탭 화면 렌더 | 이번에 직접 실행하지 않음 | 학생 |
+| 새 폴더 clone·checkout | 번들 clone 및 해시 일치 확인 완료 | 기록 |
+| Node.js 정확한 버전 출력 | 사용자는 절차가 정상이라고 보고했으나 출력값은 공유하지 않음 | 학생(필요하면 출력값 보완) |
+| 판정 4종, 목록·필터·상세 동작 | 탭 접근만 보고됨; 세부 데이터 동작은 별도 확인하지 않음 | 학생(세부 결과를 주장할 때) |
 | AI 연결·AI 점검 | 운영자 계정·앱 권한 준비 전 | 학생(준비 후) + 담당자 |
 | 실제 SDP·XDR 연결 | `-SdpHostConfig` 미지정 | 담당자 준비 후 학생 |
 | 19단계 실제 원천 집행 | 원천 집행 연결 미완료 | 담당자(제공 범위) |
@@ -103,8 +94,8 @@
 
 ## 6. 결과 요약
 
-- 원본 작업 폴더는 기준 커밋 `dcff5eb29f2b209f221968e110c5f13bc76aa42c`에서 수정 중입니다. 최종 제출 커밋과 작업 트리 상태는 학생이 커밋 후 기록합니다.
-- 새 폴더에서의 실제 실행·화면 확인은 이 문서 작성 시점 기준 **미확인**입니다. `docs/22_STAGE_RESULT.md`의 항목도 동일하게 미확인/미구현으로 남겨 두었습니다.
+- 제출 대상은 `005f53932823d9fa11e7415b96e4a7c9324fcc2d`입니다. 이 기록은 제출 후 보완되어 현재 문서 변경이 작업 트리에 남아 있습니다.
+- 번들 clone·checkout과 백업 복원은 완료했고 커밋 해시를 확인했습니다. Codex 실행 샌드박스에서는 localhost 화면을 열 수 없었지만, 학생은 자신의 PC에서 앱과 안내된 세 화면이 정상 작동했다고 보고했습니다. 상세 판정 값·필터·외부 AI/SDP 연결 결과로 확대 해석하지 않습니다.
 - 16단계 학생 상태·알림 표시(`renderStatus`)는 코드 상 구현되어 `{devices, sessions, notifications, diagnostics, mode}`를 받아 DOM을 반환합니다. `docs/22_STAGE_RESULT.md`와 `docs/VERSION_SUPPORT.md`에 명시했습니다.
 - 22단계 통과 판정은 서버 AI의 **원문 검토 기준 수료**이며, 실제 운영 인증이나 v1.0 자동 인증이 아닙니다. 서로 다른 커밋의 결과를 합쳐 최종 성공으로 표시하지 않습니다.
 
