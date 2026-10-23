@@ -211,13 +211,13 @@ flowchart LR
 | renderIdentity({ me, devices, sessions }) | 각 {status,mode,data?,error?} | DOM 요소(div) |
 | renderDecision({ status, mode, data, error, appId }) | 판정 결과 | DOM 요소(div) |
 | renderEvents({ status, mode, data, error }) | 사건 배열 | DOM 요소(div) |
-| renderStatus() | (현재 구현 없음: "학생 구현 대기" 문자열 반환) | 문자열 |
+| renderStatus({ devices, sessions, notifications, diagnostics, mode }) | 각 자료의 상태 | DOM 요소(div) |
 | renderVulnerabilities({ status, mode, data, error }) | OSV 스캔 결과 | DOM 요소(div) |
 | renderAiConnection({ status, mode, data, error, checkedAt, explanationAccepted }) | AI 점검 결과 | DOM 요소(div) |
 | renderExplanation({ event, explanation, checkedAt }) | 선택 사건 설명 | DOM 요소(div) |
 | renderAction({ status, event, actionId, target, receipt, observation, message, confirmationExpiresAt, error }) | 조치 상태 | DOM 요소(div) |
 
-public/app.js의 STUDENT_SLOTS에서 위 이름의 함수를 찾습니다. 반환값이 Element면 그대로, string이면 textContent로만 표시되고 null이면 "학생 구현 대기"입니다. 현재 renderStatus는 문자열만 반환하므로 16단계 구현 대상입니다. 이 문서는 학생 구현의 완료 여부를 판정하지 않습니다.
+public/app.js의 STUDENT_SLOTS에서 위 이름의 함수를 찾습니다. 반환값이 Element면 그대로, string이면 textContent로만 표시되고 null이면 "학생 구현 대기"입니다. 16단계 `renderStatus`는 전달 구조(`{devices, sessions, notifications, diagnostics, mode}`)를 직접 읽어 DOM을 반환하도록 구현되었습니다.
 
 ## 7. 오류별 확인 순서
 
@@ -279,7 +279,7 @@ public/app.js의 STUDENT_SLOTS에서 위 이름의 함수를 찾습니다. 반�
 | loopback 바인딩 127.0.0.1 | src/server.mjs | 코드 확인 |
 | 실행 도구 옵션(-Port·-Background·-Demo·-NativeHostConfig·-SdpHostConfig·-WaitSeconds) | tools/start-alekov.ps1 | 코드 확인 |
 | 실행 도구 시작/종료 신호 원문 | tools/start-alekov.ps1 | 코드 확인 |
-| 학생 render* 함수 8개 시그니처 및 renderStatus 현재 "학생 구현 대기" 반환 | student/extension.mjs | 코드 확인 |
+| 학생 render* 함수 8개 시그니처 및 renderStatus가 {devices, sessions, notifications, diagnostics, mode}를 받아 DOM 반환 | student/extension.mjs | 코드 확인 |
 | .env.example에 비밀값 없음 | .env.example | 코드 확인 |
 | npm start를 새 PowerShell 창에서 실제 실행 | 미실행 | 미확인 |
 | npm run demo를 새 PowerShell 창에서 실제 실행 | 미실행 | 미확인 |

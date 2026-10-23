@@ -1,4 +1,4 @@
-# 버전·지원 범위 기록 (케셰브 on-client, 제출 커밋 e1545e18eedd…)
+# 버전·지원 범위 기록 (케셰브 on-client, 제출 커밋 4347c831f9d4…)
 
 이 문서는 22단계 "버전과 지원 범위" 요구사항에 따라, **현재 제출본**의 버전·지원 범위·누락·미해결 사항을 정확히 적습니다. "확인 불가"는 정상·안전이 아닙니다.
 
@@ -13,9 +13,9 @@
 | 의존성 잠금 파일 | 포함(`package-lock.json`, lockfileVersion 3, 외부 의존성 0) | `package-lock.json` |
 | 기본 실행 스크립트 | `npm start` / `npm run demo` / `npm run check` | `package.json` `scripts` |
 | 시작 틀 매니페스트 | version 1, `updatedAt 2026-10-18T15:55:37.783Z` | `.on-starter-manifest.json` |
-| 제출 커밋(40자리) | `e1545e18eedd4415a155abfd061c0acfceb7dc45` | `git rev-parse HEAD` |
-| 커밋 메시지·브랜치 | `step-22` / `main` | `git log`, `git branch` |
-| 커밋 시각 | `2026-10-23 15:10:13 +0900` | `git log -1` |
+| 제출 커밋(40자리) | `4347c831f9d40bc399ca966d0c60f0a071df2afd` | `git rev-parse HEAD` |
+| 커밋 메시지·브랜치 | (커밋 메시지) / `main` | `git log`, `git branch` |
+| 커밋 시각 | (커밋 시각) | `git log -1` |
 
 ## 2. 지원 범위(기본 실행)
 
@@ -39,7 +39,13 @@
 | SDP 접근 제어·XDR | `-SdpHostConfig "<절대경로>"` | 프로젝트·Git·제출물 밖 설정 |
 | ALEPH 계정 연결(native) | `-NativeHostConfig "<절대경로>"` | Windows 자격 저장소 |
 | AI 게이트(CLCO) | 담당자 게이트 반영·앱 권한 발급 | 기본 실행에서는 미연결 |
-| 옵션 조치 저장소 | `--alekov-actions-config "<절대경로 JSON>"`(기존 SQLite 경로·정책 포함) | `alekov_action_intents/state/audit` 영속. 학생이 임의 설정하지 않음 |
+| 옵션 조치 저장소 | `--alekov-actions` **및** `--alekov-actions-config "<절대경로 JSON>"` 를 **둘 다** 지정 | `alekov_action_intents/state/audit` 영속. 학생이 임의 설정하지 않음 |
+
+**옵션 조치 활성화 조건 (src/server.mjs CLI 원문 기준):**
+- `--alekov-actions` 와 `--alekov-actions-config <절대경로>` 를 **함께** 지정해야 한다. 둘 중 하나만 있으면 `ACTION_STARTUP_INCOMPLETE`로 시작을 거절한다.
+- 옵션 조치를 켤 때 `-Demo`(예제)와 함께 쓰면 `ACTION_STARTUP_CONFLICT`로 거절한다.
+- 옵션 조치를 켤 때 `--native-host-config` 와 `--sdp-host-config` 가 **둘 다** 지정되어 있지 않으면 `ACTION_STARTUP_CONFLICT`로 거절한다.
+- 위 조건을 모두 만족하지 않으면 서버는 시작하지 않는다. 기본 실행(플래그 없음)은 `ACTION_UNSUPPORTED`이며 DB 파일을 열지 않는다.
 
 ## 4. 누락·미해결 사항 (현재 코드 기준)
 
@@ -64,7 +70,7 @@
 
 | 항목 | 상태 |
 |---|---|
-| 버전·범위 표기 | 이번 문서로 정리(제출 커밋 `e1545e18eedd…` 기준) |
+| 버전·범위 표기 | 이번 문서로 정리(제출 커밋 `4347c831f9d4…` 기준) |
 | 실제 실행 재현 | `docs/22_REPRODUCTION.md`에서 미확인으로 남김 |
 | 13~21단계 표 | `docs/22_STAGE_RESULT.md`에서 16단계를 "확인됨(실행 검증 미실시)"로 명시 |
 | 이전 단계 기록 | `docs/22_REPRODUCTION.md` 7장(역사 자료)에만 보존 |

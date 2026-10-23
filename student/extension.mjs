@@ -683,7 +683,7 @@ export function createStudentView() {
       paint();
       return root;
     },
-    renderStatus({ status, mode, data, error } = {}) {
+    renderStatus({ devices, sessions, notifications, diagnostics, mode } = {}) {
       const root = document.createElement('div');
       root.className = 'student-status';
 
@@ -720,106 +720,98 @@ export function createStudentView() {
         target.append(note);
       };
 
-      if (status === 'idle' || status == null) {
-        root.append(message('상태 요약 대기 중입니다. 서버에서 데이터를 다시 불러오거나 잠시 기다려 주세요.', 'idle'));
-        appendMode(root, mode);
-        return root;
-      }
-      if (status === 'loading') {
-        root.append(message('현재 기기, 세션, 알림 상태를 요약하는 중입니다.', 'loading'));
-        appendMode(root, mode);
-        return root;
-      }
-      if (status === 'error') {
-        const detail = error && typeof error.message === 'string' && error.message.length > 0
-          ? error.message
-          : '상태 정보를 불러오지 못했습니다.';
-        root.append(
-          message(`상태 확인 실패: ${detail}`, 'error'),
-          message('연결 실패 또는 응답 형식 오류로 상태를 확인할 수 없습니다. 「다시 불러오기」를 직접 눌러 다시 시도해 보세요.', 'error'),
-        );
-        appendMode(root, mode);
-        return root;
-      }
+      let hasAttention = false;
 
-      if (status === 'ok') {
-        const devices = data && data.devices;
-        const sessions = data && data.sessions;
-        const notifications = Array.isArray(data && data.notifications) ? data.notifications : [];
-        const diagnostics = data && data.diagnostics;
-        
-        let hasAttention = false;
-
-        // 기기 상태 요약
-        if (devices && devices.status === 'ok') {
-          const list = Array.isArray(devices.data) ? devices.data : [];
-          const badDevices = list.filter((d) => d.status !== 'compliant');
-          if (badDevices.length > 0) {
-            hasAttention = true;
-            root.append(message(`주의: 보안 기준을 충족하지 않거나 확인 불가인 기기가 ${badDevices.length}대 있습니다.`, 'error'));
-          } else if (list.length > 0) {
-            root.append(message('모든 등록된 기기가 보안 기준을 충족합니다.', 'ok'));
-          } else {
-            root.append(message('등록된 기기가 없습니다.', 'empty'));
-          }
-        } else if (devices && devices.status === 'error') {
+      // 기기 상태 요약
+      if (devices && devices.status === 'ok') {
+        const list = Array.isArray(devices.data) ? devices.data : [];
+        const badDevices = list.filter((d) => d.status !== 'compliant');
+        if (badDevices.length > 0) {
           hasAttention = true;
-          root.append(message('기기 상태를 불러오지 못했습니다. 확인이 필요합니다.', 'error'));
-        }
-
-        // 세션 상태 요약
-        if (sessions && sessions.status === 'ok') {
-          const list = Array.isArray(sessions.data) ? sessions.data : [];
-          const badSessions = list.filter((s) => s.status !== 'active');
-          if (badSessions.length > 0) {
-            hasAttention = true;
-            root.append(message(`주의: 만료되었거나 철회된 세션이 ${badSessions.length}건 있습니다.`, 'error'));
-          } else if (list.length > 0) {
-            root.append(message('모든 세션이 정상 활성 상태입니다.', 'ok'));
-          } else {
-            root.append(message('활성화된 세션이 없습니다.', 'empty'));
-          }
-        } else if (sessions && sessions.status === 'error') {
-          hasAttention = true;
-          root.append(message('세션 상태를 불러오지 못했습니다. 확인이 필요합니다.', 'error'));
-        }
-
-        // 알림 처리
-        if (notifications.length > 0) {
-          hasAttention = true;
+          root.append(message(`주의: 보안 기준을 충족하지 않거나 확인 불가인 기기가 ${badDevices.length}대 있습니다.`, 'error'));
           const ul = document.createElement('ul');
-          ul.className = 'student-status-notifications';
-          for (const n of notifications) {
+          ul.className = 'student-status-devices';
+          for (const d of badDevices) {
             const li = document.createElement('li');
-            li.textContent = `[${n.resource}] ${n.message}`;
+            const label = d.label || d.id || '확인 불가';
+            const status = Object.hasOwn(DEVICE_LABELS, d.status) ? DEVICE_LABELS[d.status] : '확인 불가(unknown)';
+            li.textContent = `${label}: ${status}`;
             ul.append(li);
           }
-          root.append(message(`확인이 필요한 알림이 ${notifications.length}건 있습니다.`, 'error'), ul);
+          root.append(ul);
+        } else if (list.length > 0) {
+          root.append(message('모든 등록된 기기가 보안 기준을 충족합니다.', 'ok'));
         } else {
-          root.append(message('현재 확인이 필요한 추가 알림은 없습니다.', 'ok'));
+          root.append(message('등록된 기기가 없습니다.', 'empty'));
         }
-
-        // 도움정보 상태
-        if (diagnostics && diagnostics.status === 'ok') {
-          root.append(message('도움정보 확인 완료.', 'ok'));
-        } else if (diagnostics && diagnostics.status === 'error') {
-          hasAttention = true;
-          root.append(message('도움정보를 불러오지 못했습니다. 연결 상태 확인이 필요합니다.', 'error'));
-        } else {
-          root.append(message('도움정보가 아직 로드되지 않았습니다. 「도움정보 불러오기」 버튼을 눌러 확인할 수 있습니다.', 'idle'));
-        }
-
-        if (!hasAttention) {
-          root.append(message('전체 상태 요약: 현재 확인된 범위 내에서 주의가 필요한 항목이 없습니다.', 'ok'));
-        } else {
-          root.append(message('전체 상태 요약: 주의가 필요한 항목이 있습니다. 위 내용을 확인하세요.', 'error'));
-        }
-
-        appendMode(root, mode);
-        return root;
+      } else if (devices && devices.status === 'error') {
+        hasAttention = true;
+        root.append(message('기기 상태를 불러오지 못했습니다. 확인이 필요합니다.', 'error'));
+      } else {
+        root.append(message('기기 정보를 불러오는 중입니다.', 'loading'));
       }
 
-      root.append(message('상태 정보를 확인할 수 없습니다(unknown).', 'error'));
+      // 세션 상태 요약
+      if (sessions && sessions.status === 'ok') {
+        const list = Array.isArray(sessions.data) ? sessions.data : [];
+        const badSessions = list.filter((s) => s.status !== 'active');
+        if (badSessions.length > 0) {
+          hasAttention = true;
+          root.append(message(`주의: 만료되었거나 철회된 세션이 ${badSessions.length}건 있습니다.`, 'error'));
+          const ul = document.createElement('ul');
+          ul.className = 'student-status-sessions';
+          for (const s of badSessions) {
+            const li = document.createElement('li');
+            const status = Object.hasOwn(SESSION_LABELS, s.status) ? SESSION_LABELS[s.status] : '확인 불가(unknown)';
+            li.textContent = `${s.id || '확인 불가'}: ${status}`;
+            ul.append(li);
+          }
+          root.append(ul);
+        } else if (list.length > 0) {
+          root.append(message('모든 세션이 정상 활성 상태입니다.', 'ok'));
+        } else {
+          root.append(message('활성화된 세션이 없습니다.', 'empty'));
+        }
+      } else if (sessions && sessions.status === 'error') {
+        hasAttention = true;
+        root.append(message('세션 상태를 불러오지 못했습니다. 확인이 필요합니다.', 'error'));
+      } else {
+        root.append(message('세션 정보를 불러오는 중입니다.', 'loading'));
+      }
+
+      // 알림 처리
+      if (Array.isArray(notifications) && notifications.length > 0) {
+        hasAttention = true;
+        const ul = document.createElement('ul');
+        ul.className = 'student-status-notifications';
+        for (const n of notifications) {
+          const li = document.createElement('li');
+          const res = n && n.resource ? n.resource : '알 수 없음';
+          const msg = n && n.message ? n.message : '내용 없음';
+          li.textContent = `[${res}] ${msg}`;
+          ul.append(li);
+        }
+        root.append(message(`확인이 필요한 알림이 ${notifications.length}건 있습니다.`, 'error'), ul);
+      } else {
+        root.append(message('현재 확인이 필요한 추가 알림은 없습니다.', 'ok'));
+      }
+
+      // 도움정보 상태
+      if (diagnostics && diagnostics.status === 'ok') {
+        root.append(message('도움정보 확인 완료.', 'ok'));
+      } else if (diagnostics && diagnostics.status === 'error') {
+        hasAttention = true;
+        root.append(message('도움정보를 불러오지 못했습니다. 연결 상태 확인이 필요합니다.', 'error'));
+      } else {
+        root.append(message('도움정보가 아직 로드되지 않았습니다. 「도움정보 불러오기」 버튼을 눌러 확인할 수 있습니다.', 'idle'));
+      }
+
+      if (!hasAttention) {
+        root.append(message('전체 상태 요약: 현재 확인된 범위 내에서 주의가 필요한 항목이 없습니다.', 'ok'));
+      } else {
+        root.append(message('전체 상태 요약: 주의가 필요한 항목이 있습니다. 위 내용을 확인하세요.', 'error'));
+      }
+
       appendMode(root, mode);
       return root;
     },
