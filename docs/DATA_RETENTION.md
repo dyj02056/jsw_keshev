@@ -1,4 +1,4 @@
-# 데이터 보존·백업·복원 계획 (케셰브 on-client, 제출 커밋 005f53932823…)
+# 데이터 보존·백업·복원 계획 (케셰브 on-client, 평가 기준 커밋 d0e7cbfccc3b…)
 
 이 문서는 22단계 "데이터 보존 계획" 요구사항에 따라, 이 프로젝트의 데이터 보존·백업·복원 절차와 **제한**을 적습니다. 제공 서버·판정 코드·인증 설정은 수정하지 않습니다.
 
@@ -32,10 +32,11 @@
 
 1. 변경을 작업 폴더에서 커밋합니다. 커밋 메시지는 단계 식별(예: `step-21`, `step-22`)을 포함합니다.
 2. 원격(GitHub 비공개 저장소)에 push합니다. 비공개 저장소는 공개로 바꾸지 않습니다.
-3. 필요한 경우 로컬 백업:
-   git bundle create "C:\Users\User\.codex\visualizations\2026\10\23\01a1678a-7a50-7471-8ff0-b046139059eb\on-client-005f53932823d9fa.bundle" --all
+3. 로컬 백업을 만들 때는 백업할 커밋의 전체 해시를 먼저 정하고, 저장소 밖에 해당 버전 이름으로 bundle을 만듭니다. 평가 기준본 백업의 실제 기록은 6장에 있습니다. 이후 이 문서를 커밋한 최종 제출본 백업은 새 최종 해시로 별도 생성해야 합니다.
+   git bundle create "<프로젝트 밖 경로>\on-client-<40자리 커밋 해시>.bundle" --all
+   git bundle verify "<프로젝트 밖 경로>\on-client-<40자리 커밋 해시>.bundle"
 4. 백업 파일은 프로젝트 폴더 **밖**에 두고, 비밀값·인증서가 포함되지 않았는지 다시 확인합니다.
-5. 백업 파일 옆에 커밋 해시 `005f53932823d9fa11e7415b96e4a7c9324fcc2d`, 백업 시각, 백업 만든 사람을 적습니다.
+5. 백업 파일 옆에 대상 커밋 해시, 백업 시각, 백업 만든 사람을 적습니다.
 
 ### 3.2 옵션 조치 저장소(SQLite, 담당자가 사용하는 경우만)
 
@@ -47,18 +48,18 @@
 
 ## 4. 복원 절차
 
-### 4.1 코드·문서 복원 (제출 커밋 기준)
+### 4.1 코드·문서 복원 (평가 기준 커밋)
 
 1. 새 빈 폴더를 만듭니다(예: `C:\Users\<사용자>\Documents\restore22`).
 2. 원격 저장소에서:
    git clone <저장소 URL> on-client
    cd on-client
-   git checkout 005f53932823d9fa11e7415b96e4a7c9324fcc2d
+   git checkout d0e7cbfccc3b769972044565b058ddaccb4939e8
    또는 번들에서:
-   git clone "C:\Users\User\.codex\visualizations\2026\10\23\01a1678a-7a50-7471-8ff0-b046139059eb\on-client-005f53932823d9fa.bundle" on-client
+   git clone "<프로젝트 밖 경로>\on-client-d0e7cbfccc3b769972044565b058ddaccb4939e8.bundle" on-client
    cd on-client
-   git checkout 005f53932823d9fa11e7415b96e4a7c9324fcc2d
-3. `git rev-parse HEAD`가 `005f53932823d9fa11e7415b96e4a7c9324fcc2d`와 같은지 확인합니다.
+   git checkout d0e7cbfccc3b769972044565b058ddaccb4939e8
+3. `git rev-parse HEAD`가 `d0e7cbfccc3b769972044565b058ddaccb4939e8`와 같은지 확인합니다.
 4. 런타임·실행 절차는 `docs/STUDENT_RUNBOOK.md` 4장을 따릅니다.
 5. 원본 작업 폴더는 지우거나 덮어쓰지 않습니다.
 
@@ -85,10 +86,11 @@
 | 항목 | 상태 |
 |---|---|
 | 원본 작업 폴더 보존 | 확인됨(`git status --short` 빈 출력) |
-| 코드·문서 복원 대상 = 제출 커밋 `005f53932823d9fa11e7415b96e4a7c9324fcc2d` | 번들 복원 후 해시 일치 확인 |
+| 코드·문서 복원 대상 = 평가 기준 커밋 `d0e7cbfccc3b769972044565b058ddaccb4939e8` | 별도 폴더 복원 후 해시 일치 확인 |
 | 기본 실행 DB 없음 명시 | 반영 |
 | 옵션 SQLite 영속 기록 보존·백업·복구 제한 | 반영 |
-| 백업 생성·검증 | 확인됨(`C:\Users\User\.codex\visualizations\2026\10\23\01a1678a-7a50-7471-8ff0-b046139059eb\on-client-005f53932823d9fa.bundle`, 371,946 bytes; `git bundle verify` 완료) |
-| 새 폴더 복원 | 확인됨(복원 checkout의 HEAD가 제출 커밋과 일치) |
-| 번들 백업 무결성 | 확인됨(`git bundle verify`: complete history) |
+| 백업 생성·검증 | 확인됨(`C:\Users\User\.codex\visualizations\2026\10\23\01a1678a-7a50-7471-8ff0-b046139059eb\on-client-d0e7cbfccc3b7699.bundle`, 378,399 bytes; `git bundle verify`에서 complete history 확인) |
+| 새 폴더 복원 | 확인됨(`on-client-restore-d0e7cbfccc3b7699`에서 checkout HEAD가 `d0e7cbfccc3b769972044565b058ddaccb4939e8`와 일치) |
+| 이전 005f539 번들 | 과거 재현 기록용으로 보존; 현재 기준본 백업·복원 절차와 구분 |
+| 이후 문서 보완분 | 평가 기준 커밋 뒤의 미커밋 변경이므로 위 d0e7 번들에 포함되지 않음. 최종 제출 커밋 후 별도 bundle 생성 필요 |
 | 인증·설정 파일 새 폴더 미복사 | 이번 재현 폴더에는 복사하지 않음. |
