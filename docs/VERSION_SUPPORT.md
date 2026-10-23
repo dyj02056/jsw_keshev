@@ -1,8 +1,8 @@
-# 버전·지원 범위 기록 (케셰브 on-client)
+# 버전·지원 범위 기록 (케셰브 on-client, 제출 커밋 e1545e18eedd…)
 
-이 문서는 22단계 "버전과 지원 범위" 요구사항에 따라, 현재 제출본의 버전·지원 범위·누락·미해결 사항을 정확히 적습니다. "확인 불가"는 정상·안전이 아닙니다.
+이 문서는 22단계 "버전과 지원 범위" 요구사항에 따라, **현재 제출본**의 버전·지원 범위·누락·미해결 사항을 정확히 적습니다. "확인 불가"는 정상·안전이 아닙니다.
 
-## 1. 버전
+## 1. 버전 (현재 제출본)
 
 | 항목 | 값 | 근거 |
 |---|---|---|
@@ -10,10 +10,12 @@
 | 패키지 버전 | `0.2.11` | `package.json` |
 | Node.js(engines) | `24.19.0` | `package.json` `engines.node` |
 | 외부 npm 의존성 | 없음 | `package.json` (dependencies 없음) |
+| 의존성 잠금 파일 | 포함(`package-lock.json`, lockfileVersion 3, 외부 의존성 0) | `package-lock.json` |
 | 기본 실행 스크립트 | `npm start` / `npm run demo` / `npm run check` | `package.json` `scripts` |
 | 시작 틀 매니페스트 | version 1, `updatedAt 2026-10-18T15:55:37.783Z` | `.on-starter-manifest.json` |
-| 커밋(40자리) | `081e0ce25d19084063f56609da93c68cf7bfb05f` | `git rev-parse HEAD` |
-| 커밋 메시지·브랜치 | `step-21` / `main` | `git log`, `git branch` |
+| 제출 커밋(40자리) | `e1545e18eedd4415a155abfd061c0acfceb7dc45` | `git rev-parse HEAD` |
+| 커밋 메시지·브랜치 | `step-22` / `main` | `git log`, `git branch` |
+| 커밋 시각 | `2026-10-23 15:10:13 +0900` | `git log -1` |
 
 ## 2. 지원 범위(기본 실행)
 
@@ -27,6 +29,8 @@
 | 보안 기록 상한 | 최근 40건(사용자 본인 범위) |
 | 기기 상한 | 100건 |
 | 세션 | 현재 검증된 연결 1건 |
+| 조치(기본) | **미지원**. `src/actions/store.mjs`·`src/actions/service.mjs`는 명시 설정이 없으면 파일을 열지 않고 `ACTION_UNSUPPORTED` |
+| 조치(옵션) | 담당자가 기존 애플리케이션 SQLite 경로와 정책을 CLI로 명시한 경우에만 prepare/execute/readResult 동작 |
 
 ## 3. 지원 범위(옵션·담당자 설정 시)
 
@@ -35,12 +39,13 @@
 | SDP 접근 제어·XDR | `-SdpHostConfig "<절대경로>"` | 프로젝트·Git·제출물 밖 설정 |
 | ALEPH 계정 연결(native) | `-NativeHostConfig "<절대경로>"` | Windows 자격 저장소 |
 | AI 게이트(CLCO) | 담당자 게이트 반영·앱 권한 발급 | 기본 실행에서는 미연결 |
+| 옵션 조치 저장소 | `--alekov-actions-config "<절대경로 JSON>"`(기존 SQLite 경로·정책 포함) | `alekov_action_intents/state/audit` 영속. 학생이 임의 설정하지 않음 |
 
-## 4. 누락·미해결 사항
+## 4. 누락·미해결 사항 (현재 코드 기준)
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| 19단계 실제 원천 조치 집행 | 미완료(기본 미지원) | `docs/FINAL_PRODUCT_GUIDE.md` 5·9장, `public/app.js` "기본 원천 연결은 미지원" |
+| 19단계 실제 원천 조치 집행 | 미완료(기본 미지원) | `docs/FINAL_PRODUCT_GUIDE.md` 5·9장, `src/actions/README.md`, `src/actions/store.mjs` 기본 `ACTION_UNSUPPORTED` |
 | 21·22 공식 자동 확인 접수·서명 | 미연결 | `docs/FINAL_PRODUCT_GUIDE.md` 9장 |
 | 학생 계정·AI 앱 권한 발급, 게이트 반영 | 운영자 준비 필요 | `docs/FINAL_PRODUCT_GUIDE.md` 9장 |
 | 18단계 SDP 사건·AI 계정 대응 등록 | 운영자 서명 방식으로 로컬 확인, 운영 원천 미확보 | `docs/FINAL_PRODUCT_GUIDE.md` 9장 |
@@ -59,6 +64,7 @@
 
 | 항목 | 상태 |
 |---|---|
-| 버전·범위 표기 | 이번 문서로 정리 |
+| 버전·범위 표기 | 이번 문서로 정리(제출 커밋 `e1545e18eedd…` 기준) |
 | 실제 실행 재현 | `docs/22_REPRODUCTION.md`에서 미확인으로 남김 |
-| 13~21단계 표 | `docs/22_STAGE_RESULTS.md`에서 미확인 항목 명시 |
+| 13~21단계 표 | `docs/22_STAGE_RESULT.md`에서 16단계를 "확인됨(실행 검증 미실시)"로 명시 |
+| 이전 단계 기록 | `docs/22_REPRODUCTION.md` 7장(역사 자료)에만 보존 |
