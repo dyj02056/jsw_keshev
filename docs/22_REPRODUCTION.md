@@ -14,7 +14,7 @@
 | 부모 커밋 작성자 | `dyj02056` | `git log -1 81b17ba` 출력 |
 | 부모 커밋 시각 | `2026-10-23 17:28:01 +09:00` | `git log -1 81b17ba` 출력 |
 | 부모 → 현재 제출본 변경 | 문서 5개(`docs/22_REPRODUCTION.md`, `docs/22_STAGE_RESULT.md`, `docs/VERSION_SUPPORT.md`, `docs/DATA_RETENTION.md`, `docs/AI_SETUP_GUIDE.md`). 앱 소스·패키지 변경 없음 | `git diff --stat 81b17ba HEAD` |
-| 시작 틀 버전 | `alekov-client-starter@0.2.11` | `package.json` |
+| 시작 틀 버전(이전 재현 기록) | `alekov-client-starter@0.2.11` | `package.json` 당시 기록; 현재 작업 폴더는 0.2.21 |
 | Node.js 기준 버전 | `24.19.0` | `package.json` `engines.node` |
 | 제출 커밋 파일 수 | 63 (부모 `81b17ba…`와 같음. 이번 수정은 기존 문서만 변경) | `git ls-tree -r --name-only HEAD` |
 | 작업 폴더(원본) | `C:/Users/User/Documents/sktassign/on-client` | 사용자 확인 |
@@ -123,3 +123,10 @@ Codex가 과거 버전 `d0e7cbf…`의 Git bundle을 만들고 검증한 뒤, �
 - 이전 재현 기록은 `renderStatus` 미구현 상태를 전제로 작성되었습니다.
 - 현재 수정본에서는 `renderStatus`가 구현되어 전달 구조(`{devices, sessions, notifications, diagnostics, mode}`)를 직접 읽습니다.
 - 이전 커밋 시점의 기록은 이 문서의 0장·2장에 남아 있던 이전 내용을 이 7장으로 옮겨 보존합니다.
+
+### PC 대시보드 보완 기록 (2026-10-27)
+
+- 제공 PC 측정값은 `GET /api/pc/status`를 재사용합니다. CPU·메모리·디스크 사용률 추이는 성공한 실측만 현재 브라우저 세션에 최대 12회 보관하며, 브라우저를 닫으면 사라집니다.
+- 각 로컬 측정 항목은 자체 조회 시각을 표시합니다. 읽기 실패 시 `확인 불가`와 이유를 표시하며, 실패 또는 설명용 예시값은 추이에 추가하지 않습니다.
+- 네트워크 요약, Windows 방화벽 프로필, 최근 24시간 System·Application 경고·오류 집계는 읽기 전용이며 공격 탐지 결과가 아닙니다. SDP 연결 상태는 로컬 PC 측정 성공과 별도 표시합니다.
+- 직접 재현한 실행·HTTP 응답·브라우저 확인 결과는 이번 변경 완료 후 확인한 내용만 아래에 추가합니다. 운영 SDP·AI·보안 경보 탐지·설치형 패키지 실행 결과를 확인하지 않았다면 미확인으로 남깁니다.

@@ -94,7 +94,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1 -Na
 
 | 코드 | 원인 | 학생 확인 | 운영자 확인 | 다시 시도 조건 |
 |---|---|---|---|---|
-| ALEKOV_CONNECT_NOT_MOUNTED, ALEKOV_CONNECT_UNAVAILABLE | 이 버전에 연결 경로 없음 | 기다림. 판정·기록은 그대로 사용 | 배포본·설정 | 새 배포본 뒤 |
+| ALEKOV_CONNECT_NOT_MOUNTED, ALEKOV_CONNECT_UNAVAILABLE | 연결 경로가 없거나 로컬 계정 연결 준비가 안 됨 | `npm start` 대신 최신 실행 도구를 사용하고 준비 완료 문구를 확인 | 준비 도구·배포본·연결 서비스 | 로컬 준비 완료 및 담당자 서비스 확인 뒤 |
 | ALEKOV_CONNECT_EXPIRED, ALEKOV_CONNECT_NOT_FOUND | 승인 기한 지남·요청 없음 | 이미 승인했으면 「상태 다시 확인」 먼저, 아니면 취소 뒤 새로 | 없음 | 새로 시작 |
 | ALEKOV_CONNECT_REJECTED | 승인 계정이 지금 로그인과 다름 | 같은 계정인지 확인 | 없음 | 확인 뒤 새로 |
 | ALEKOV_CONNECT_CONTEXT_CHANGED, ALEKOV_CONNECT_CONTEXT_UNVERIFIED | 계정·프로젝트·세션 변경 | 계정 연결부터 다시 | 프로젝트 등록 | 다시 로그인 뒤 |

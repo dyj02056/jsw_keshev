@@ -19,7 +19,7 @@
 | 항목 | 값 | 근거 |
 |---|---|---|
 | Node.js | 24.19.0 (engines) | package.json |
-| 패키지 버전 | alekov-client-starter@0.2.11 | package.json |
+| 패키지 버전 | alekov-client-starter@0.2.21 | package.json |
 | 외부 npm 의존성 | 없음 (import는 Node 내장 모듈만) | package.json, src/server.mjs |
 | 기본 실행 모드 | disconnected (기존 SDP 엔진 미연결) | src/server.mjs (engine.evidenceMode 기본값) |
 | 기본 포트 | 5189 (ON_PORT로 변경 가능) | src/server.mjs (process.env.ON_PORT ?? 5189) |
@@ -91,11 +91,11 @@ on-client/                     ← Git 최상위가 아니라 프로젝트 폴�
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
 
-동등한 대체 명령(실행 도구가 없는 예전 배포본, package.json의 scripts.start와 동일):
+계정 연결 준비를 하지 않는 직접 실행(개발·오프라인 화면 확인용):
 
     npm start
 
-npm start는 node src/server.mjs를 실행합니다. 실행 도구도 결국 같은 서버를 띄웁니다. 단, -ExecutionPolicy Bypass는 이번 실행에만 적용되며 PC의 보안 설정은 바뀌지 않습니다.
+`npm start`는 `node src/server.mjs`만 실행하므로 계정 연결용 로컬 보관소 준비를 건너뜁니다. 계정 연결이 필요하면 기본 실행 도구를 사용하세요. `-ExecutionPolicy Bypass`는 이번 PowerShell 실행에만 적용되며 PC의 보안 설정은 바뀌지 않습니다.
 
 옵션(tools/start-alekov.ps1 원문):
 
@@ -104,6 +104,7 @@ npm start는 node src/server.mjs를 실행합니다. 실행 도구도 결국 같
 | -Port <1024~65535> | 포트 번호(기본 5189). 포트가 사용 중이면 그 프로그램을 끄지 않고 안내 후 종료 |
 | -Background | 창 없이 실행. 안내된 프로세스 번호의 node를 작업 관리자에서 종료하면 꺼짐 |
 | -Demo | 예제 자료로 실행 (실제 연결 아님) |
+| -NoNativeHost | 담당자 안내에 따라 자동 계정 연결 준비 없이 로컬 확인 |
 | -NativeHostConfig "<경로>" | 담당자가 안내한 계정·AI 연결 설정. 절대경로, 큰따옴표·제어문자·대체 스트림 없이 |
 | -SdpHostConfig "<경로>" | 담당자가 안내한 SDP 연결 설정. -Demo와 함께 쓸 수 없음 |
 | -WaitSeconds <1~120> | 켜짐 확인 대기(기본 20) |
@@ -119,11 +120,12 @@ npm start는 node src/server.mjs를 실행합니다. 실행 도구도 결국 같
 ### 4.5 정상 시작 신호
 
 - 실행 도구(tools/start-alekov.ps1) 사용 시, 서버가 HTTP 200으로 응답하면 PowerShell 창에 다음이 표시됩니다(원문):
+  - "계정 연결 준비가 끝났습니다. 앱에서 확인 번호로 로그인·승인을 진행하세요." (기본 준비가 성공했을 때)
   - "케셰브가 켜졌습니다. 브라우저에서 http://127.0.0.1:5189/ 을 여세요." (포트가 다르면 해당 포트)
   - "서버가 응답한 것만 확인했습니다. AI 연결 상태는 화면에서 따로 확인해 주세요."
   - -Background면 위에 더해 "뒤에서 실행 중입니다(프로세스 번호 N). 끄려면 이 번호의 node 를 작업 관리자에서 종료하세요."
   - 그 외(-Background 아님)면 "끄려면 이 창에서 Ctrl+C 를 누르세요."
-- npm start로 직접 실행한 경우, 서버 원문 로그는 "케셰브 연결 확인: http://127.0.0.1:<port>"(demo면 "케셰브 예제:")입니다. 이것은 src/server.mjs의 console.log에서 나옵니다.
+- `npm start`로 직접 실행한 경우 서버 원문 로그는 "케셰브 연결 확인: http://127.0.0.1:<port>"입니다. 이 실행만으로는 계정 연결용 로컬 준비가 되지 않아 `NATIVE_HOST_DISABLED` 또는 `ALEKOV_CONNECT_UNAVAILABLE`이 나올 수 있습니다.
 - 브라우저에서 상단 mode-badge가 "연결 없음"(또는 "예제 데이터(demo) · 실제 연결 아님")으로 표시되고, 「보호 현황」 탭이 열립니다.
 - mode-badge의 data-mode 속성이 disconnected 또는 demo이면 정상 시작이며, connected는 실제 엔진 연결 시에만 나옵니다(기본 실행에서는 나오지 않음).
 
@@ -304,3 +306,34 @@ public/app.js의 STUDENT_SLOTS에서 위 이름의 함수를 찾습니다. 반�
 - 제공 서버(src/server.mjs)·public/app.js·판정 코드·인증 설정을 수정하지 않습니다.
 - 자동 재시도는 없습니다. 실패는 화면에 그대로 보이고, 다시 시도는 사용자가 직접 누릅니다.
 - 확인 불가는 정상·안전으로 표시하지 않습니다.
+
+## 11. PC 관제 대시보드와 기본 포장
+
+### PC 상태 직접 확인
+
+1. `on-client` 폴더에서 PowerShell을 열고 `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1`을 실행합니다. 기본 준비를 쓴 경우 `계정 연결 준비가 끝났습니다`가 나오는지 확인합니다.
+2. 브라우저에서 `http://127.0.0.1:5189/`를 열고 보호 현황의 위쪽 네 카드와 아래 추이·기록 영역을 봅니다.
+3. 아래쪽 「내 PC 상태」에서 「내 PC 확인」을 누릅니다. CPU·메모리·디스크 사용률 카드와 조회 시각이 갱신되고, 네트워크·방화벽·Windows 기록은 각자의 조회 결과와 시각을 표시합니다.
+4. 학생 구현 영역에서 「PC 상태 조회」를 누릅니다. 이후 성공 조회부터 직전 성공값과 사용률 퍼센트포인트(pp) 차이를 비교합니다. 조회 실패 시 예시값으로 대체하지 않고 원인 안내를 표시합니다.
+5. 추이 표는 현재 브라우저 화면에서 성공한 최근 12회만 보관하며 화면을 닫으면 없어집니다. 예시값이나 실패한 조회는 기록하지 않습니다.
+
+Windows `System`·`Application` 로그는 최근 24시간의 경고·오류 건수를 최대 5,000건 범위에서 표시합니다. 이 수는 공격·침해 탐지 결과가 아닙니다. 네트워크·방화벽·PC 상태 조회 성공은 SDP 연결 성공을 뜻하지 않습니다. 연결 카드가 `SDP 미연결`이면 별도 상태로 봅니다. 이 조회는 관리자 권한 상승이나 설정 변경을 하지 않습니다.
+
+### 기본 앱 포장
+
+포장 전 현재 프로젝트의 Git 커밋 상태를 확인하고, 앱 폴더 밖의 아직 없는 새 출력 폴더와 PNG 아이콘 경로를 정합니다. 기본 명령은 이 PC에 승인된 실행 환경이 설치돼 있어야 합니다. 준비되지 않았다면 `PROVIDED_RUNTIME_NOT_INSTALLED` 안내를 담당자 준비 항목으로 남기며, `--app-only-v1`로 우회하지 않습니다.
+
+```powershell
+npm run package-app -- --source . --out "<on-client 밖의 새 출력 폴더>" --iconPath "<실제 PNG 아이콘 경로>"
+```
+
+성공하면 출력 경로, `APP_PACKAGE_MANIFEST.json`, `app.zip`, `runtime.zip`, `install-app.ps1`, `INSTALL.md`를 확인합니다. 설치와 바탕화면 바로가기는 `INSTALL.md`의 manifest 해시가 포함된 PowerShell 명령으로 진행합니다. 기존 설치 폴더나 기존 바로가기를 덮어쓰지 말고, 새 대상 경로를 선택합니다. 이 프로젝트에서 포장·설치·바로가기 생성이 실제 완료됐다는 기록은 별도 확인 뒤에만 남깁니다.
+
+### 시연 순서와 제공/학생 구현 구분
+
+1. 보호 현황의 CPU·메모리·디스크와 측정 시각을 보여 줍니다(제공된 로컬 조회).
+2. 네트워크 요약과 Windows 방화벽 프로필을 보여 주고, 설정은 읽기만 한다고 설명합니다(제공된 로컬 조회).
+3. 최근 Windows 경고·오류 수와 최근 화면 내 측정 추이를 보여 줍니다. 이 숫자는 공격 판정이 아닙니다(조회는 제공, 비교 설명은 학생 구현).
+4. `SDP 미연결` 상태에서도 PC 로컬 조회와 서버 연결 상태가 별개임을 보여 줍니다.
+
+실제 측정값, 예시 설명, 확인 불가 값은 서로 바꾸어 표시하지 않습니다. 성공한 로컬 조회 기록은 브라우저 화면을 닫으면 보존되지 않습니다. 실제 SDP 연결, 공격 탐지, 운영 수용을 이 시연으로 주장하지 않습니다.

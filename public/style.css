@@ -268,3 +268,49 @@ main:focus { outline: none; }
   .identity dd, .kv dd { margin-bottom: 6px; }
   .art-explain { float: none; margin: 0 0 8px; }
 }
+
+/* 보호 현황 관제 대시보드: 실측 요약 4개, 아래 조회 추이·서버 기록. 의미 상태색은 공통 토큰 그대로 유지한다. */
+.dashboard { margin: 0 0 20px; }
+.dashboard > h2 { margin-bottom: 12px; }
+.dashboard-status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.dashboard-status-card { min-width: 0; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.dashboard-status-card h3, .dashboard-panel h3 { font-size: 0.95rem; margin: 0 0 8px; }
+.dashboard-value { min-height: 1.6em; margin: 0 0 6px; font-size: 1.05rem; font-weight: 650; overflow-wrap: anywhere; }
+.dashboard-note { margin: 0; color: var(--muted); font-size: 0.82rem; overflow-wrap: anywhere; }
+.dashboard-time { margin: 4px 0 0; font-size: 0.78rem; overflow-wrap: anywhere; }
+.dashboard-status-card[data-state="unavailable"], .dashboard-status-card[data-state="unknown"] { border-left: 3px solid var(--unknown); }
+.dashboard-status-card[data-state="loading"] { border-left: 3px solid var(--challenge); }
+.dashboard-status-card[data-state="measured"] { border-left: 3px solid var(--allow); }
+.dashboard-status-card[data-state="demo"] { border-left: 3px solid var(--challenge); }
+.dashboard-lower { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); gap: 16px; align-items: start; }
+.dashboard-panel { margin: 0; min-width: 0; }
+.dashboard-panel > .muted { margin: 0 0 10px; }
+.dashboard-table-wrap { max-width: 100%; overflow-x: auto; }
+.dashboard-trend-table { width: 100%; min-width: 440px; border-collapse: collapse; font-size: 0.85rem; }
+.dashboard-trend-table th, .dashboard-trend-table td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.dashboard-trend-table th { color: var(--muted); background: var(--bg); font-weight: 600; }
+.dashboard-records { margin: 0 0 12px; padding-left: 24px; display: grid; gap: 10px; }
+.dashboard-records li { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); overflow-wrap: anywhere; }
+.dashboard-records li p { margin: 0; white-space: pre-wrap; }
+.dashboard-link { display: inline-block; margin-top: 4px; color: var(--accent); }
+.dashboard-local-summary { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+.dashboard-local-summary h4 { margin: 0 0 8px; font-size: 0.9rem; }
+.dashboard-local-summary p { margin: 0 0 8px; }
+.dashboard-local-checks { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.dashboard-local-checks li { overflow-wrap: anywhere; }
+.pc-time { margin: 2px 0 0; font-size: 0.78rem; }
+@media (max-width: 1024px) {
+  .dashboard-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-lower { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .dashboard-status-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-status-card { padding: 12px; }
+  .dashboard-panel { padding: 12px; }
+}
+.student-pc-comparison { margin: 0 0 18px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.student-pc-comparison h3 { margin: 0 0 8px; font-size: 1rem; }
+.student-pc-comparison button:focus-visible, .dashboard-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.student-pc-comparison-values { display: grid; grid-template-columns: minmax(110px, max-content) minmax(0, 1fr); gap: 6px 12px; }
+.student-pc-comparison-values dt { font-weight: 650; }
+.student-pc-comparison-values dd { margin: 0; overflow-wrap: anywhere; }

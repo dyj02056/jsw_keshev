@@ -40,7 +40,7 @@
 - Node.js 24.19.0을 사용합니다. 외부 npm 의존성은 0입니다.
 - 학생 프로젝트 절대 경로를 확인합니다. 기존 파일을 덮어쓰거나 지우거나 초기화하지 않습니다.
 - 실행은 [STUDENT_LAUNCH_GUIDE.md](STUDENT_LAUNCH_GUIDE.md)의 실행 도구를 사용합니다. 학생 AI 연결을 위해 `.env`에 주소·열쇠·모델 값을 입력하지 않습니다.
-- `npm start`는 `127.0.0.1:5189`이며 기본은 미연결입니다. `npm run demo`는 예제일 뿐 실제 연결이 아닙니다.
+- `npm start`는 `127.0.0.1:5189` 서버만 켜며 계정 연결용 로컬 준비를 하지 않습니다. 계정 연결은 `tools/start-alekov.ps1`을 사용합니다. `npm run demo`는 예제일 뿐 실제 연결이 아닙니다.
 - 시작 틀 `package.json`의 스크립트는 `start`·`demo`·`test` 세 가지입니다. `student/extension.mjs` 문법만 따로 보려면 `node --check student/extension.mjs`를 씁니다.
 
 ## 담당자가 native 호스트 설정을 안내한 경우

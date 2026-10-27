@@ -77,32 +77,35 @@ export function createPcStatusReader({system = os, disk = statfs, run = execute,
   return async function read({signal, directory = diskRoot} = {}) {
     signal?.throwIfAborted();
     const metrics = {};
+    const stamp = value => ({...value, checkedAt: clock().toISOString()});
     const cpu = (async () => {
-      try {const before = system.cpus(); await pause(200, undefined, {signal}); metrics.cpu = {...cpuUsage(before, system.cpus()), sampleMs: 200};}
-      catch {metrics.cpu = missing(signal?.aborted ? 'cancelled' : 'query_failed');}
+      try {const before = system.cpus(); await pause(200, undefined, {signal}); metrics.cpu = stamp({...cpuUsage(before, system.cpus()), sampleMs: 200});}
+      catch {metrics.cpu = stamp(missing(signal?.aborted ? 'cancelled' : 'query_failed'));}
     })();
     try {
       const totalBytes = system.totalmem(), freeBytes = system.freemem();
-      metrics.memory = finite(totalBytes) && totalBytes > 0 && finite(freeBytes) && freeBytes <= totalBytes ? {state: 'ok', usedBytes: totalBytes - freeBytes, totalBytes} : missing('invalid_response');
-    } catch {metrics.memory = missing('query_failed');}
+      metrics.memory = stamp(finite(totalBytes) && totalBytes > 0 && finite(freeBytes) && freeBytes <= totalBytes ? {state: 'ok', usedBytes: totalBytes - freeBytes, totalBytes} : missing('invalid_response'));
+    } catch {metrics.memory = stamp(missing('query_failed'));}
     try {
       const entries = Object.values(system.networkInterfaces()).filter(Array.isArray).map(rows => rows.filter(row => row.internal === false));
-      metrics.network = {state: 'ok', interfaceCount: entries.filter(rows => rows.length).length, ipv4Count: entries.flat().filter(row => row.family === 'IPv4' || row.family === 4).length};
-    } catch {metrics.network = missing('query_failed');}
+      metrics.network = stamp({state: 'ok', interfaceCount: entries.filter(rows => rows.length).length, ipv4Count: entries.flat().filter(row => row.family === 'IPv4' || row.family === 4).length});
+    } catch {metrics.network = stamp(missing('query_failed'));}
     const drive = (async () => {
       try {const d = await disk(directory); const totalBytes = Number(d.blocks) * Number(d.bsize), freeBytes = Number(d.bavail) * Number(d.bsize);
-        metrics.disk = finite(totalBytes) && totalBytes > 0 && finite(freeBytes) && freeBytes <= totalBytes ? {state: 'ok', totalBytes, freeBytes} : missing('invalid_response');}
-      catch {metrics.disk = missing('query_failed');}
+        metrics.disk = stamp(finite(totalBytes) && totalBytes > 0 && finite(freeBytes) && freeBytes <= totalBytes ? {state: 'ok', totalBytes, freeBytes} : missing('invalid_response'));}
+      catch {metrics.disk = stamp(missing('query_failed'));}
     })();
     const windows = (async () => {
-      if (platform !== 'win32') {metrics.firewall = missing('unsupported'); metrics.events = missing('unsupported'); return;}
+      if (platform !== 'win32') {metrics.firewall = stamp(missing('unsupported')); metrics.events = stamp(missing('unsupported')); return;}
       try {
         const exe = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
         const {stdout} = await run(exe, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', WINDOWS_READ], {windowsHide: true, encoding: 'utf8', timeout: 8000, maxBuffer: 128 * 1024, signal});
-        Object.assign(metrics, normalizeWindowsStatus(JSON.parse(stdout.trim())));
+        const windowsMetrics = normalizeWindowsStatus(JSON.parse(stdout.trim()));
+        metrics.firewall = stamp(windowsMetrics.firewall);
+        metrics.events = stamp(windowsMetrics.events);
       } catch (error) {
         const reason = signal?.aborted ? 'cancelled' : error?.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' ? 'query_failed' : error?.killed || error?.code === 'ETIMEDOUT' ? 'timeout' : 'query_failed';
-        metrics.firewall = missing(reason); metrics.events = missing(reason);
+        metrics.firewall = stamp(missing(reason)); metrics.events = stamp(missing(reason));
       }
     })();
     await Promise.all([cpu, drive, windows]); signal?.throwIfAborted();

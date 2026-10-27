@@ -1,6 +1,46 @@
 // 이 파일은 학생이 같은 프로젝트에서 이어서 구현합니다.
 // 제공 UI를 받은 것만으로 단계 완료를 인정하지 않습니다.
-export function createStudentView() {
+export function createStudentView({api, onChange = () => {}} = {}) {
+  const pcHistory = [];
+  let pcReadState = {status: 'idle', message: '아직 학생 구현에서 PC 상태를 다시 조회하지 않았습니다.'};
+  let pcReadPending = false;
+  const validPcTime = value => typeof value === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value));
+  const validPcNumber = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+  const pcPercent = (value, total) => validPcNumber(value) && validPcNumber(total) && total > 0 && value <= total ? value / total * 100 : null;
+  async function refreshPcComparison() {
+    if (pcReadPending) return;
+    pcReadPending = true;
+    pcReadState = {status: 'loading', message: '이 PC의 CPU·메모리·디스크를 조회하는 중입니다.'};
+    onChange();
+    document.getElementById('student-pc-comparison-status')?.focus();
+    try {
+      const result = await api?.get('/api/pc/status');
+      const data = result?.ok === true ? result.data : null;
+      const measured = Date.parse(data?.measuredAt ?? '');
+      if (data?.schema !== 'aleph.on.pc-status.v1' || data.source !== 'local-pc' || !validPcTime(data.measuredAt)
+        || !Number.isFinite(measured) || Math.abs(Date.now() - measured) > 60000) throw Error('조회 응답을 확인할 수 없습니다.');
+      const cpu = data.metrics?.cpu, memory = data.metrics?.memory, disk = data.metrics?.disk;
+      const memoryPercent = pcPercent(memory?.usedBytes, memory?.totalBytes);
+      const diskUsed = validPcNumber(disk?.freeBytes) && validPcNumber(disk?.totalBytes) && disk.totalBytes > 0 && disk.freeBytes <= disk.totalBytes
+        ? (disk.totalBytes - disk.freeBytes) / disk.totalBytes * 100 : null;
+      if (cpu?.state !== 'ok' || !validPcNumber(cpu.usagePercent) || cpu.usagePercent > 100 || !validPcTime(cpu.checkedAt)
+        || memory?.state !== 'ok' || memoryPercent === null || !validPcTime(memory.checkedAt)
+        || disk?.state !== 'ok' || diskUsed === null || !validPcTime(disk.checkedAt)) {
+        throw Error('CPU·메모리·디스크 중 하나 이상을 확인할 수 없습니다. 제공된 「내 PC 상태」에서 항목별 이유를 확인하세요.');
+      }
+      const sample = {measuredAt: data.measuredAt, values: {cpu: cpu.usagePercent, memory: memoryPercent, disk: diskUsed}, checkedAt: {
+        cpu: cpu.checkedAt, memory: memory.checkedAt, disk: disk.checkedAt,
+      }};
+      if (pcHistory.at(-1)?.measuredAt !== sample.measuredAt) pcHistory.push(sample);
+      while (pcHistory.length > 12) pcHistory.shift();
+      pcReadState = {status: 'ok', message: pcHistory.length > 1 ? '최근 성공 조회를 직전 결과와 비교했습니다.' : '첫 실측값을 저장했습니다. 다시 조회하면 변화를 비교합니다.'};
+    } catch (error) {
+      pcReadState = {status: 'error', message: typeof error?.message === 'string' ? error.message : '조회에 실패했습니다. 값을 확인할 수 없습니다.'};
+    } finally {
+      pcReadPending = false;
+      onChange();
+    }
+  }
   return {
     renderIdentity({ me, devices, sessions } = {}) {
       const root = document.createElement('div');
@@ -735,6 +775,42 @@ export function createStudentView() {
         note.textContent = MODE_LABELS[m];
         target.append(note);
       };
+
+      // 학생 추가 기능: 기존의 읽기 전용 PC 조회 API를 재사용해 성공한 최근 두 회차만 비교한다.
+      // 초기 자동 조회는 하지 않으며, 값을 읽지 못하면 예시값을 만들어 채우지 않는다.
+      const comparison = document.createElement('section');
+      comparison.className = 'student-pc-comparison';
+      const comparisonTitle = document.createElement('h3'); comparisonTitle.textContent = 'PC 상태 변화 비교 · 학생 구현';
+      const comparisonIntro = document.createElement('p'); comparisonIntro.className = 'muted';
+      comparisonIntro.textContent = '제공된 PC 조회 기능을 다시 요청해 CPU·메모리·디스크 사용률을 직전 성공 조회와 비교합니다. 기록은 이 화면을 연 동안만 보관합니다.';
+      const comparisonButton = document.createElement('button'); comparisonButton.type = 'button';
+      comparisonButton.className = 'btn'; comparisonButton.textContent = pcHistory.length ? '다시 조회' : 'PC 상태 조회';
+      comparisonButton.disabled = pcReadPending;
+      comparisonButton.addEventListener('click', () => { void refreshPcComparison(); });
+      const comparisonStatus = document.createElement('p'); comparisonStatus.id = 'student-pc-comparison-status';
+      comparisonStatus.className = `student-state student-state-${pcReadState.status === 'error' ? 'error' : pcReadState.status === 'ok' ? 'ok' : pcReadState.status === 'loading' ? 'loading' : 'idle'}`;
+      comparisonStatus.setAttribute('role', 'status'); comparisonStatus.setAttribute('aria-live', 'polite'); comparisonStatus.tabIndex = -1;
+      comparisonStatus.textContent = pcReadState.message;
+      comparison.append(comparisonTitle, comparisonIntro, comparisonButton, comparisonStatus);
+      if (pcReadState.status === 'ok' && pcHistory.length) {
+        const latest = pcHistory.at(-1), previous = pcHistory.at(-2);
+        const list = document.createElement('dl'); list.className = 'student-pc-comparison-values';
+        const labels = {cpu: 'CPU 사용률', memory: '메모리 사용률', disk: '디스크 사용률'};
+        for (const key of ['cpu', 'memory', 'disk']) {
+          const dt = document.createElement('dt'); dt.textContent = labels[key];
+          const dd = document.createElement('dd');
+          const current = `${latest.values[key].toFixed(1)}% · ${new Date(latest.checkedAt[key]).toLocaleString('ko-KR')}`;
+          if (!previous) dd.textContent = `${current} · 비교할 이전 실측값 없음`;
+          else {
+            const delta = latest.values[key] - previous.values[key];
+            const direction = delta > 0 ? '증가' : delta < 0 ? '감소' : '변화 없음';
+            dd.textContent = `${current} · 직전 조회 대비 ${Math.abs(delta).toFixed(1)} 퍼센트포인트 ${direction}`;
+          }
+          list.append(dt, dd);
+        }
+        comparison.append(list);
+      }
+      root.append(comparison);
 
       let hasAttention = false;
 

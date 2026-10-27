@@ -10,7 +10,7 @@
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
 
-npm start도 같은 서버를 켭니다. 기본 실행은 실제 회사 시스템(기존 엔진)에 연결되지 않은 상태입니다. npm run demo는 예제 자료로 화면을 보여 줄 뿐이며 실제 연결이나 성취가 아닙니다. npm run check는 student/extension.mjs의 문법만 확인합니다.
+기본 실행은 실제 회사 시스템(SDP)에 연결되지 않은 상태일 수 있습니다. `npm start`는 서버만 켜며 계정 연결용 로컬 준비를 건너뜁니다. 연결 흐름을 쓰려면 위의 `start-alekov.ps1` 실행 도구를 사용하고 `계정 연결 준비가 끝났습니다` 문구를 확인하세요. `npm run demo`는 예제 자료이며 실제 연결이나 성취가 아닙니다. `npm run check`는 student/extension.mjs의 문법만 확인합니다.
 
 ## 지킬 것
 
