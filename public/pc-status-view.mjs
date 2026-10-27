@@ -3,20 +3,11 @@ const REASONS = {
   permission_denied: '읽기 권한이 없습니다. 관리자 권한으로 바꾸기 전에 담당자에게 확인하세요.',
   unsupported: '이 운영체제에서는 이 항목을 조회하지 않습니다.',
   timeout: '조회 시간이 초과됐습니다. 잠시 후 다시 확인하세요.',
-  query_failed: '이번 조회에 실패했습니다. PC 설정은 바뀌지 않았습니다. 다시 조회해 주세요.',
-  invalid_response: 'PC에서 받은 값을 확인할 수 없습니다. 정상 상태로 간주하지 않습니다.',
-  invalid_sample: '측정값이 유효하지 않아 표시하지 않았습니다. 다시 조회해 주세요.',
-  cancelled: '조회가 취소되어 값을 확인하지 못했습니다. 다시 조회해 주세요.',
 };
 const bytes = n => `${(n / 1024 ** 3).toFixed(1)} GB`;
 const number = n => typeof n === 'number' && Number.isFinite(n) && n >= 0;
 const percent = n => number(n) && n <= 100;
 const counter = n => Number.isSafeInteger(n) && n >= 0;
-const checkedAtText = value => {
-  if (typeof value !== 'string' || !/(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return '조회 시각 확인 불가';
-  const ms = Date.parse(value);
-  return Number.isFinite(ms) ? `조회 시각 ${new Date(ms).toLocaleString('ko-KR')}` : '조회 시각 확인 불가';
-};
 
 export function pcMetricText(key, metric) {
   if (metric?.state !== 'ok') return {text: '확인 불가', note: REASONS[metric?.reason] ?? '이번 조회에서 값을 확인하지 못했습니다. 다시 확인해 주세요.', state: 'unavailable'};
@@ -41,7 +32,7 @@ export function mountPcStatus(host, {fetchImpl = globalThis.fetch?.bind(globalTh
   const doc = host.ownerDocument, win = doc.defaultView;
   const make = (tag, text, cls) => {const node = doc.createElement(tag); if (text) node.textContent = text; if (cls) node.className = cls; return node;};
   const heading = make('h2', '내 PC 상태');
-  const intro = make('p', '아래 수치는 이 PC의 실제 조회 결과입니다. 설명용 예시값은 섞지 않습니다. 제공된 조회 기능이며 학생 구현 성취와 구분하고, AI나 외부 서버로 자동 전송하지 않습니다.', 'muted');
+  const intro = make('p', '이 앱을 실행한 PC의 값을 읽습니다. 제공된 조회 기능이며 학생 구현 성취와 구분합니다. 이 결과는 AI나 외부 서버로 자동 전송하지 않습니다.', 'muted');
   const refresh = make('button', '내 PC 확인', 'btn'); refresh.type = 'button';
   const label = make('label', '', 'pc-auto'); const auto = doc.createElement('input'); auto.type = 'checkbox';
   label.append(auto, doc.createTextNode(' 10초마다 확인 (앱 탭이 보이는 동안)'));
@@ -49,27 +40,18 @@ export function mountPcStatus(host, {fetchImpl = globalThis.fetch?.bind(globalTh
   const grid = make('div', '', 'pc-metrics');
   const rows = new Map();
   for (const [key, title] of Object.entries({cpu: 'CPU', memory: '메모리', disk: '디스크', network: '네트워크', firewall: 'Windows 방화벽', events: 'Windows 기록'})) {
-    const article = make('article', '', 'pc-metric'), value = make('p', '아직 조회하지 않음', 'pc-value'), note = make('p', '', 'muted'), time = make('p', '조회 시각 확인 전', 'pc-time muted');
-    article.dataset.metric = key;
-    article.append(make('h3', title), value, note, time); grid.append(article); rows.set(key, {article, value, note, time});
+    const article = make('article', '', 'pc-metric'), value = make('p', '아직 조회하지 않음', 'pc-value'), note = make('p', '', 'muted');
+    article.append(make('h3', title), value, note); grid.append(article); rows.set(key, {article, value, note});
   }
   host.replaceChildren(heading, intro, refresh, label, status, grid);
   let disposed = false, controller = null, generation = 0, timer = null;
   function stopTimer() {if (timer !== null) win.clearTimeout(timer); timer = null;}
   function next() {stopTimer(); if (!disposed && auto.checked && !doc.hidden) timer = win.setTimeout(() => {void read();}, Math.max(10000, intervalMs));}
-  function clearCurrentMeasurement() {
-    status.removeAttribute('data-measured-at');
-    for (const {article} of rows.values()) delete article.dataset.trendValue;
-  }
-  function unavailable() {
-    clearCurrentMeasurement();
-    for (const row of rows.values()) {row.article.dataset.state = 'unavailable'; row.value.textContent = '확인 불가'; row.note.textContent = '이전 값을 현재 상태로 표시하지 않습니다.'; row.time.textContent = '조회 시각 확인 불가';}
-  }
+  function unavailable() {for (const row of rows.values()) {row.article.dataset.state = 'unavailable'; row.value.textContent = '이번 조회 확인 불가'; row.note.textContent = '이전 값을 현재 상태로 표시하지 않습니다.';}}
   async function read() {
     if (disposed || doc.hidden) return;
     stopTimer(); controller?.abort(); const own = ++generation, abort = new AbortController(); controller = abort;
-    refresh.disabled = true; status.textContent = '이 PC에서 읽는 중…'; clearCurrentMeasurement();
-    for (const row of rows.values()) {row.article.dataset.state = 'loading'; row.value.textContent = '조회 중…'; row.note.textContent = '이번 조회가 끝나면 결과를 갱신합니다.'; row.time.textContent = '조회 시각 확인 중';}
+    refresh.disabled = true; status.textContent = '이 PC에서 읽는 중…';
     let timedOut = false;
     const deadline = win.setTimeout(() => {timedOut = true; abort.abort();}, timeoutMs);
     try {
@@ -83,18 +65,9 @@ export function mountPcStatus(host, {fetchImpl = globalThis.fetch?.bind(globalTh
       const measured = typeof data?.measuredAt === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(data.measuredAt) ? Date.parse(data.measuredAt) : NaN;
       if (data?.schema !== 'aleph.on.pc-status.v1' || data.source !== 'local-pc' || !Number.isFinite(measured) || Math.abs(Date.now() - measured) > 60000) throw Error('stale');
       for (const [key, row] of rows) {
-        const metric = data.metrics?.[key];
-        const info = pcMetricText(key, metric);
-        row.article.dataset.state = info.state; row.value.textContent = info.text; row.note.textContent = info.note; row.time.textContent = checkedAtText(metric?.checkedAt);
-        if (info.state === 'measured' && ['cpu', 'memory', 'disk'].includes(key)) {
-          const trendValue = key === 'cpu' ? metric.usagePercent
-            : key === 'memory' ? metric.usedBytes / metric.totalBytes * 100
-              : (metric.totalBytes - metric.freeBytes) / metric.totalBytes * 100;
-          if (Number.isFinite(trendValue) && trendValue >= 0 && trendValue <= 100) row.article.dataset.trendValue = String(trendValue);
-          else delete row.article.dataset.trendValue;
-        } else delete row.article.dataset.trendValue;
+        const info = pcMetricText(key, data.metrics?.[key]);
+        row.article.dataset.state = info.state; row.value.textContent = info.text; row.note.textContent = info.note;
       }
-      status.dataset.measuredAt = new Date(measured).toISOString();
       status.textContent = `이 PC 마지막 실측 · ${new Date(measured).toLocaleString('ko-KR')} · 보안 서버 연결 상태와 별도`;
     } catch {
       if (disposed || own !== generation) return;

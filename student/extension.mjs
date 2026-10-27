@@ -1,44 +1,91 @@
 // 이 파일은 학생이 같은 프로젝트에서 이어서 구현합니다.
 // 제공 UI를 받은 것만으로 단계 완료를 인정하지 않습니다.
 export function createStudentView({api, onChange = () => {}} = {}) {
+  // 학생 구현: 제공 /api/pc/status 한 번의 응답으로 카드 4개·추이·근거 모음을 그린다. 새 수집 코드는 없다.
+  // 제공 서버는 항목별 시각을 주지 않으므로 측정 시각은 응답의 measuredAt 하나만 쓴다.
   const pcHistory = [];
-  let pcReadState = {status: 'idle', message: '아직 학생 구현에서 PC 상태를 다시 조회하지 않았습니다.'};
+  let pcLatest = null;
+  let pcReadState = {status: 'idle', message: '아직 조회하지 않았습니다. 「PC 상태 조회」를 눌러 이 PC의 실제 값을 읽습니다.', failed: []};
   let pcReadPending = false;
-  const validPcTime = value => typeof value === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value));
-  const validPcNumber = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
-  const pcPercent = (value, total) => validPcNumber(value) && validPcNumber(total) && total > 0 && value <= total ? value / total * 100 : null;
-  async function refreshPcComparison() {
+  const PC_LABELS = {cpu: 'CPU', memory: '메모리', disk: '디스크'};
+  const PC_REASONS = {
+    permission_denied: '읽기 권한이 없습니다. 관리자 권한으로 바꾸지 말고 이 항목은 확인 불가로 두세요.',
+    unsupported: '이 운영체제에서는 조회하지 않는 항목입니다.',
+    timeout: '조회 시간이 초과됐습니다. 잠시 뒤 「다시 조회」를 누르세요.',
+    query_failed: '이번 조회에 실패했습니다. 「다시 조회」를 눌러 보세요. PC 설정은 바뀌지 않았습니다.',
+    invalid_response: 'PC에서 받은 값을 확인할 수 없습니다. 정상으로 보지 않습니다. 「다시 조회」를 눌러 보세요.',
+    invalid_sample: '측정값이 유효하지 않아 표시하지 않았습니다. 「다시 조회」를 눌러 보세요.',
+    cancelled: '조회가 취소됐습니다. 「다시 조회」를 눌러 보세요.',
+  };
+  const pcNumber = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+  const pcGb = bytes => `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  const pcTime = value => {
+    const ms = typeof value === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? Date.parse(value) : NaN;
+    return Number.isFinite(ms) ? new Date(ms).toLocaleString('ko-KR') : null;
+  };
+  const pcMissing = metric => ({ok: false, value: '확인 불가', detail: metric?.state === 'ok'
+    ? '응답의 값이나 단위를 확인할 수 없습니다. 정상으로 보지 않습니다. 「다시 조회」를 눌러 보세요.'
+    : (PC_REASONS[metric?.reason] ?? '이번 조회에서 값을 읽지 못했습니다. 「다시 조회」를 눌러 보세요.')});
+  function readPcMetrics(data) {
+    const m = data.metrics ?? {};
+    const out = {};
+    const cpu = m.cpu;
+    out.cpu = cpu?.state === 'ok' && pcNumber(cpu.usagePercent) && cpu.usagePercent <= 100
+      ? {ok: true, percent: cpu.usagePercent, value: `${cpu.usagePercent.toFixed(1)} % 사용`, detail: '전체 CPU 사용률 · 약 0.2초 구간 실측'} : pcMissing(cpu);
+    const mem = m.memory;
+    out.memory = mem?.state === 'ok' && pcNumber(mem.usedBytes) && pcNumber(mem.totalBytes) && mem.totalBytes > 0 && mem.usedBytes <= mem.totalBytes
+      ? {ok: true, percent: mem.usedBytes / mem.totalBytes * 100, value: `${pcGb(mem.usedBytes)} / ${pcGb(mem.totalBytes)} 사용 (${(mem.usedBytes / mem.totalBytes * 100).toFixed(1)} %)`, detail: '사용 중인 메모리 / 전체 메모리'} : pcMissing(mem);
+    const disk = m.disk;
+    out.disk = disk?.state === 'ok' && pcNumber(disk.freeBytes) && pcNumber(disk.totalBytes) && disk.totalBytes > 0 && disk.freeBytes <= disk.totalBytes
+      ? {ok: true, percent: (disk.totalBytes - disk.freeBytes) / disk.totalBytes * 100, value: `여유 ${pcGb(disk.freeBytes)} / 전체 ${pcGb(disk.totalBytes)} (사용 ${((disk.totalBytes - disk.freeBytes) / disk.totalBytes * 100).toFixed(1)} %)`, detail: '앱이 있는 드라이브 기준'} : pcMissing(disk);
+    const net = m.network;
+    out.network = net?.state === 'ok' && Number.isSafeInteger(net.interfaceCount) && Number.isSafeInteger(net.ipv4Count)
+      ? {ok: true, value: `네트워크 인터페이스 ${net.interfaceCount}개 · IPv4 구성 ${net.ipv4Count}개`} : pcMissing(net);
+    const fw = m.firewall, names = ['Domain', 'Private', 'Public'];
+    out.firewall = fw?.state === 'ok' && Array.isArray(fw.profiles) && names.every(n => fw.profiles.some(p => p?.name === n && typeof p.enabled === 'boolean'))
+      ? {ok: true, value: names.map(n => `${n} ${fw.profiles.find(p => p.name === n).enabled ? '켜짐' : '꺼짐'}`).join(' · ')} : pcMissing(fw);
+    const ev = m.events;
+    out.events = ev?.state === 'ok' && Number.isSafeInteger(ev.warningCount) && Number.isSafeInteger(ev.errorCount) && typeof ev.truncated === 'boolean'
+      ? {ok: true, value: `최근 24시간 경고 ${ev.warningCount}건 · 오류 ${ev.errorCount}건${ev.truncated ? ' (일부만 집계)' : ''}`} : pcMissing(ev);
+    return out;
+  }
+  const focusPc = id => document.getElementById(id)?.focus();
+  async function refreshPcStatus() {
     if (pcReadPending) return;
     pcReadPending = true;
-    pcReadState = {status: 'loading', message: '이 PC의 CPU·메모리·디스크를 조회하는 중입니다.'};
+    pcLatest = null;
+    pcReadState = {status: 'loading', message: '이 PC에서 읽는 중입니다. 끝날 때까지 기다려 주세요.', failed: []};
     onChange();
-    document.getElementById('student-pc-comparison-status')?.focus();
+    focusPc('student-pc-status');
     try {
       const result = await api?.get('/api/pc/status');
       const data = result?.ok === true ? result.data : null;
-      const measured = Date.parse(data?.measuredAt ?? '');
-      if (data?.schema !== 'aleph.on.pc-status.v1' || data.source !== 'local-pc' || !validPcTime(data.measuredAt)
-        || !Number.isFinite(measured) || Math.abs(Date.now() - measured) > 60000) throw Error('조회 응답을 확인할 수 없습니다.');
-      const cpu = data.metrics?.cpu, memory = data.metrics?.memory, disk = data.metrics?.disk;
-      const memoryPercent = pcPercent(memory?.usedBytes, memory?.totalBytes);
-      const diskUsed = validPcNumber(disk?.freeBytes) && validPcNumber(disk?.totalBytes) && disk.totalBytes > 0 && disk.freeBytes <= disk.totalBytes
-        ? (disk.totalBytes - disk.freeBytes) / disk.totalBytes * 100 : null;
-      if (cpu?.state !== 'ok' || !validPcNumber(cpu.usagePercent) || cpu.usagePercent > 100 || !validPcTime(cpu.checkedAt)
-        || memory?.state !== 'ok' || memoryPercent === null || !validPcTime(memory.checkedAt)
-        || disk?.state !== 'ok' || diskUsed === null || !validPcTime(disk.checkedAt)) {
-        throw Error('CPU·메모리·디스크 중 하나 이상을 확인할 수 없습니다. 제공된 「내 PC 상태」에서 항목별 이유를 확인하세요.');
+      if (!data) {
+        const why = typeof result?.error?.message === 'string' && result.error.message ? ` (${result.error.message})` : '';
+        throw Error(`서버에서 PC 상태를 받지 못했습니다${why}.`);
       }
-      const sample = {measuredAt: data.measuredAt, values: {cpu: cpu.usagePercent, memory: memoryPercent, disk: diskUsed}, checkedAt: {
-        cpu: cpu.checkedAt, memory: memory.checkedAt, disk: disk.checkedAt,
-      }};
-      if (pcHistory.at(-1)?.measuredAt !== sample.measuredAt) pcHistory.push(sample);
-      while (pcHistory.length > 12) pcHistory.shift();
-      pcReadState = {status: 'ok', message: pcHistory.length > 1 ? '최근 성공 조회를 직전 결과와 비교했습니다.' : '첫 실측값을 저장했습니다. 다시 조회하면 변화를 비교합니다.'};
+      const measured = Date.parse(data.measuredAt ?? '');
+      if (data.schema !== 'aleph.on.pc-status.v1' || data.source !== 'local-pc' || !pcTime(data.measuredAt) || Math.abs(Date.now() - measured) > 60000) {
+        throw Error('받은 응답의 형식이나 측정 시각을 확인할 수 없습니다.');
+      }
+      const items = readPcMetrics(data);
+      pcLatest = {measuredAt: data.measuredAt, items};
+      const failed = Object.keys(PC_LABELS).filter(key => !items[key].ok);
+      if (!failed.length) {
+        if (pcHistory.at(-1)?.measuredAt !== data.measuredAt) {
+          pcHistory.push({measuredAt: data.measuredAt, values: {cpu: items.cpu.percent, memory: items.memory.percent, disk: items.disk.percent}});
+        }
+        while (pcHistory.length > 12) pcHistory.shift();
+        pcReadState = {status: 'ok', failed, message: pcHistory.length > 1 ? '조회 성공. 직전 성공 조회와 비교했습니다.' : '조회 성공. 첫 실측값을 저장했습니다. 다시 조회하면 변화를 비교합니다.'};
+      } else {
+        pcReadState = {status: 'partial', failed, message: `일부 항목을 읽지 못했습니다: ${failed.map(key => PC_LABELS[key]).join(', ')}. 아래 카드의 이유를 확인하고 「다시 조회」를 눌러 보세요. 이번 회차는 추이에 넣지 않았고 예시 값으로 채우지 않았습니다.`};
+      }
     } catch (error) {
-      pcReadState = {status: 'error', message: typeof error?.message === 'string' ? error.message : '조회에 실패했습니다. 값을 확인할 수 없습니다.'};
+      pcReadState = {status: 'error', failed: Object.keys(PC_LABELS), message: `조회에 실패했습니다: ${typeof error?.message === 'string' ? error.message : '원인을 알 수 없습니다.'} CPU·메모리·디스크 모두 확인 불가입니다. 앱이 실행 중인지 확인한 뒤 「다시 조회」를 누르세요. 예시 값으로 채우지 않았습니다.`};
     } finally {
       pcReadPending = false;
       onChange();
+      focusPc('student-pc-refresh');
     }
   }
   return {
@@ -776,41 +823,123 @@ export function createStudentView({api, onChange = () => {}} = {}) {
         target.append(note);
       };
 
-      // 학생 추가 기능: 기존의 읽기 전용 PC 조회 API를 재사용해 성공한 최근 두 회차만 비교한다.
-      // 초기 자동 조회는 하지 않으며, 값을 읽지 못하면 예시값을 만들어 채우지 않는다.
-      const comparison = document.createElement('section');
-      comparison.className = 'student-pc-comparison';
-      const comparisonTitle = document.createElement('h3'); comparisonTitle.textContent = 'PC 상태 변화 비교 · 학생 구현';
-      const comparisonIntro = document.createElement('p'); comparisonIntro.className = 'muted';
-      comparisonIntro.textContent = '제공된 PC 조회 기능을 다시 요청해 CPU·메모리·디스크 사용률을 직전 성공 조회와 비교합니다. 기록은 이 화면을 연 동안만 보관합니다.';
-      const comparisonButton = document.createElement('button'); comparisonButton.type = 'button';
-      comparisonButton.className = 'btn'; comparisonButton.textContent = pcHistory.length ? '다시 조회' : 'PC 상태 조회';
-      comparisonButton.disabled = pcReadPending;
-      comparisonButton.addEventListener('click', () => { void refreshPcComparison(); });
-      const comparisonStatus = document.createElement('p'); comparisonStatus.id = 'student-pc-comparison-status';
-      comparisonStatus.className = `student-state student-state-${pcReadState.status === 'error' ? 'error' : pcReadState.status === 'ok' ? 'ok' : pcReadState.status === 'loading' ? 'loading' : 'idle'}`;
-      comparisonStatus.setAttribute('role', 'status'); comparisonStatus.setAttribute('aria-live', 'polite'); comparisonStatus.tabIndex = -1;
-      comparisonStatus.textContent = pcReadState.message;
-      comparison.append(comparisonTitle, comparisonIntro, comparisonButton, comparisonStatus);
-      if (pcReadState.status === 'ok' && pcHistory.length) {
-        const latest = pcHistory.at(-1), previous = pcHistory.at(-2);
-        const list = document.createElement('dl'); list.className = 'student-pc-comparison-values';
-        const labels = {cpu: 'CPU 사용률', memory: '메모리 사용률', disk: '디스크 사용률'};
-        for (const key of ['cpu', 'memory', 'disk']) {
-          const dt = document.createElement('dt'); dt.textContent = labels[key];
-          const dd = document.createElement('dd');
-          const current = `${latest.values[key].toFixed(1)}% · ${new Date(latest.checkedAt[key]).toLocaleString('ko-KR')}`;
-          if (!previous) dd.textContent = `${current} · 비교할 이전 실측값 없음`;
-          else {
-            const delta = latest.values[key] - previous.values[key];
-            const direction = delta > 0 ? '증가' : delta < 0 ? '감소' : '변화 없음';
-            dd.textContent = `${current} · 직전 조회 대비 ${Math.abs(delta).toFixed(1)} 퍼센트포인트 ${direction}`;
-          }
-          list.append(dt, dd);
+      // 학생 구현: 카드 4개(CPU·메모리·디스크·SDP 연결) + 추이 + 근거 모음. 제공 조회 결과만 쓰며 예시 값은 만들지 않는다.
+      const make = (tag, text, className) => {
+        const node = document.createElement(tag);
+        if (text) node.textContent = text;
+        if (className) node.className = className;
+        return node;
+      };
+      const dash = make('section', '', 'student-pc-dashboard');
+      dash.setAttribute('aria-labelledby', 'student-pc-title');
+      dash.setAttribute('aria-busy', pcReadState.status === 'loading' ? 'true' : 'false');
+      const dashTitle = make('h3', '내 PC 관제 대시보드 · 학생 구현'); dashTitle.id = 'student-pc-title';
+      dash.append(dashTitle);
+
+      const core = make('ol', '', 'student-pc-core');
+      for (const line of [
+        '내 PC 점검 — 구현됨: 아래 카드가 이 PC의 실측값을 측정 시각과 함께 보여 줍니다.',
+        '변화 추이 비교 — 구현됨: 성공한 조회를 최근 12회까지 직전 대비 pp로 비교합니다.',
+        'PC 관찰 근거 모음 — 구현됨: 네트워크·방화벽·Windows 기록을 한계와 함께 모읍니다(판정 아님).',
+      ]) core.append(make('li', line));
+      dash.append(core, make('p', '서비스 연결·사용량·비용은 구현하지 않았습니다(미구현). 외부 서비스 연동이 없습니다.', 'muted'));
+      dash.append(make('p', '표시 구분: 「실측」은 방금 이 PC에서 읽은 값, 「확인 불가」는 읽지 못한 값입니다. 설명용 예시 값은 이 화면에 없습니다. 측정 시각은 PC를 한 번 조회한 시각이며 항목별 시각이 아닙니다.', 'muted'));
+
+      const refreshButton = make('button', pcHistory.length || pcReadState.status !== 'idle' ? '다시 조회' : 'PC 상태 조회', 'btn');
+      refreshButton.type = 'button'; refreshButton.id = 'student-pc-refresh';
+      refreshButton.disabled = pcReadPending;
+      refreshButton.addEventListener('click', () => { void refreshPcStatus(); });
+      const readStatus = make('p', pcReadState.message, `student-state student-state-${{ok: 'ok', partial: 'error', error: 'error', loading: 'loading'}[pcReadState.status] ?? 'idle'}`);
+      readStatus.id = 'student-pc-status'; readStatus.tabIndex = -1;
+      readStatus.setAttribute('role', 'status'); readStatus.setAttribute('aria-live', 'polite');
+      dash.append(refreshButton, readStatus);
+
+      const measuredText = pcLatest ? pcTime(pcLatest.measuredAt) : null;
+      const stateOf = key => {
+        if (pcReadState.status === 'loading') return {label: '조회 중', value: '조회 중…', detail: '끝나면 결과로 바뀝니다. 이전 값을 현재 값으로 보여 주지 않습니다.', kind: 'loading'};
+        if (pcLatest) {
+          const item = pcLatest.items[key];
+          return item.ok ? {label: '실측', value: item.value, detail: item.detail, kind: 'ok'} : {label: '확인 불가', value: item.value, detail: item.detail, kind: 'error'};
         }
-        comparison.append(list);
+        if (pcReadState.status === 'error') return {label: '확인 불가', value: '확인 불가', detail: '조회에 실패해 값을 읽지 못했습니다. 아래 안내를 확인하세요.', kind: 'error'};
+        return {label: '조회 전', value: '아직 조회하지 않음', detail: '「PC 상태 조회」를 누르면 이 PC의 실제 값을 읽습니다.', kind: 'idle'};
+      };
+      const cards = make('div', '', 'student-pc-cards');
+      cards.style.display = 'grid';
+      cards.style.gridTemplateColumns = 'repeat(auto-fit, minmax(200px, 1fr))';
+      cards.style.gap = '12px';
+      cards.style.margin = '12px 0';
+      const addCard = (title, info, timeText) => {
+        const card = make('article', '', 'student-pc-card');
+        card.dataset.state = info.kind;
+        card.style.border = '1px solid var(--border)';
+        card.style.borderRadius = 'var(--radius)';
+        card.style.padding = '12px';
+        card.append(make('h4', title), make('p', `상태: ${info.label}`, 'muted'), make('p', info.value, `student-state student-state-${info.kind}`), make('p', info.detail, 'muted'));
+        if (timeText) card.append(make('p', timeText, 'muted'));
+        cards.append(card);
+      };
+      for (const key of Object.keys(PC_LABELS)) {
+        addCard(PC_LABELS[key], stateOf(key), pcLatest && measuredText ? `측정 시각 ${measuredText}` : '측정 시각 없음');
       }
-      root.append(comparison);
+      const connection = (() => {
+        if (mode === 'disconnected') return {label: 'SDP 미연결', value: 'SDP 미연결', detail: 'SDP 서버 설정 없이 실행한 기본 상태입니다(정상). 이 PC 조회 성공과 별개입니다.', kind: 'idle'};
+        if (mode === 'connected') return {label: '연결됨', value: '연결됨', detail: '서버 연결 응답입니다. PC 조회 결과와 별개로 봅니다.', kind: 'ok'};
+        if (mode === 'demo') return {label: '예제 연결', value: '예제 연결', detail: '예제 자료입니다. 실제 SDP 연결 성공이 아닙니다.', kind: 'loading'};
+        return {label: '확인 불가', value: '확인 불가', detail: '연결 상태를 확인할 수 없습니다. 성공으로 보지 않습니다.', kind: 'error'};
+      })();
+      addCard('SDP 연결', connection, null);
+      dash.append(cards);
+
+      dash.append(make('h4', 'PC 상태 추이'));
+      dash.append(make('p', pcHistory.length
+        ? `성공한 조회 ${pcHistory.length}회 · 이 화면을 연 동안 최근 12회 · 변동은 직전 조회 대비 퍼센트포인트(pp)입니다. 일부만 읽은 회차와 실패는 넣지 않습니다.`
+        : '아직 비교할 실측 이력이 없습니다. CPU·메모리·디스크를 모두 읽은 조회만 기록하며 화면을 닫으면 사라집니다.', 'muted'));
+      if (pcHistory.length) {
+        const wrap = make('div', '', 'vulnerabilities-result');
+        const table = make('table');
+        table.append(make('caption', '이 화면에서 조회한 PC 사용률 추이(최신순)'));
+        const head = make('tr');
+        for (const label of ['조회 시각', 'CPU 사용률', '메모리 사용률', '디스크 사용률']) { const th = make('th', label); th.scope = 'col'; head.append(th); }
+        const thead = make('thead'); thead.append(head); table.append(thead);
+        const body = make('tbody');
+        for (let i = pcHistory.length - 1; i >= 0; i--) {
+          const row = make('tr'), current = pcHistory[i], previous = pcHistory[i - 1];
+          row.append(make('td', pcTime(current.measuredAt) ?? '시각 확인 불가'));
+          for (const key of Object.keys(PC_LABELS)) {
+            const value = `${current.values[key].toFixed(1)} %`;
+            if (!previous) { row.append(make('td', `${value} · 첫 조회`)); continue; }
+            const delta = current.values[key] - previous.values[key];
+            row.append(make('td', `${value} · ${delta > 0 ? '+' : delta < 0 ? '−' : '±'}${Math.abs(delta).toFixed(1)} pp`));
+          }
+          body.append(row);
+        }
+        table.append(body); wrap.append(table); dash.append(wrap);
+      }
+
+      dash.append(make('h4', 'PC 관찰 근거 모음 (판정이 아닙니다)'));
+      const evidenceWrap = make('div', '', 'vulnerabilities-result');
+      const evidence = make('table');
+      evidence.append(make('caption', '이 PC에서 읽은 관찰과 그것만으로 말할 수 없는 것'));
+      const evidenceHead = make('tr');
+      for (const label of ['관찰 항목', '관찰 값', '측정 시각', '이것만으로 말할 수 없는 것']) { const th = make('th', label); th.scope = 'col'; evidenceHead.append(th); }
+      const evidenceThead = make('thead'); evidenceThead.append(evidenceHead); evidence.append(evidenceThead);
+      const evidenceBody = make('tbody');
+      for (const [key, title, limit] of [
+        ['network', '네트워크 구성 요약', '인터넷 접속이나 ZTNA 허용 여부는 알 수 없습니다.'],
+        ['firewall', 'Windows 방화벽', '설정을 읽기만 했고 바꾸지 않았습니다. 보호 전체가 안전하다는 뜻이 아닙니다.'],
+        ['events', 'Windows 경고·오류 건수', '최근 24시간 System·Application 건수이며 공격·침해 탐지 결과가 아닙니다. 최대 5,000건까지만 셉니다.'],
+      ]) {
+        const row = make('tr');
+        let observed = pcReadState.status === 'loading' ? '조회 중…' : '아직 조회하지 않음';
+        if (pcLatest) observed = pcLatest.items[key].ok ? pcLatest.items[key].value : `확인 불가 · ${pcLatest.items[key].detail}`;
+        else if (pcReadState.status === 'error') observed = '확인 불가 · 조회에 실패했습니다.';
+        row.append(make('td', title), make('td', observed), make('td', pcLatest && measuredText ? measuredText : '없음'), make('td', limit));
+        evidenceBody.append(row);
+      }
+      evidence.append(evidenceBody); evidenceWrap.append(evidence); dash.append(evidenceWrap);
+      dash.append(make('p', '서버에서 조회한 보안 기록은 위쪽 「보안 기록」 탭에서 확인하세요. 빈 결과와 조회 실패는 그 탭에서 구분됩니다.', 'muted'));
+      root.append(dash);
 
       let hasAttention = false;
 
